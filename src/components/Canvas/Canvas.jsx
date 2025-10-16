@@ -5,6 +5,10 @@ import {
   CANVAS_HEIGHT
 } from '../../utils/constants.js';
 import { useCanvas } from '../../hooks/useCanvas.js';
+import { useAuth } from '../../hooks/useAuth.jsx';
+import { usePresence } from '../../hooks/usePresence.js';
+import { useRealtimeCursor } from '../../hooks/useRealtimeCursor.js';
+import CursorLayer from '../Collaboration/CursorLayer.jsx';
 
 const Canvas = () => {
   const {
@@ -17,6 +21,27 @@ const Canvas = () => {
     stopDragging,
     isDragging
   } = useCanvas();
+
+  // Get current authenticated user
+  const { user } = useAuth();
+
+  // Get presence data for online users
+  const { 
+    onlineUsers, 
+    userCursorColor, 
+    isConnected: presenceConnected 
+  } = usePresence(user);
+
+  // Initialize real-time cursor tracking and sync
+  const { 
+    cursorPosition, 
+    isTracking, 
+    otherCursors,
+    syncStatus,
+    isConnected: cursorSyncConnected,
+    initializeCursorTracking 
+  } = useRealtimeCursor(user, true);
+
 
   const [stageSize, setStageSize] = useState(() => {
     // Calculate available space (full window minus header height)
@@ -40,6 +65,14 @@ const Canvas = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Initialize cursor tracking on the stage
+  useEffect(() => {
+    if (stageRef.current && user) {
+      const stageElement = stageRef.current.getStage().container();
+      return initializeCursorTracking(stageElement);
+    }
+  }, [initializeCursorTracking, user]);
 
   // Handle drag (pan) functionality
   const handleDragStart = () => {
@@ -104,7 +137,14 @@ const Canvas = () => {
           </React.Fragment>
         </Layer>
 
-        {/* Cursor layer will be added later for real-time cursors */}
+        {/* Cursor layer for real-time multiplayer cursors */}
+        <CursorLayer
+          onlineUsers={onlineUsers}
+          currentUserId={user?.uid}
+          scale={zoom}
+          showCursors={presenceConnected && cursorSyncConnected}
+          canvasBounds={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT }}
+        />
         
         {/* UI layer for controls, selection indicators, etc. */}
         <Layer listening={false}>
@@ -118,7 +158,11 @@ const Canvas = () => {
           <div>Canvas: {CANVAS_WIDTH} × {CANVAS_HEIGHT}</div>
           <div>Zoom: {(zoom * 100).toFixed(0)}%</div>
           <div>Position: x:{Math.round(panPosition.x)}, y:{Math.round(panPosition.y)}</div>
+          <div>Cursor: x:{Math.round(cursorPosition.x)}, y:{Math.round(cursorPosition.y)} {isTracking ? '(tracking)' : '(idle)'}</div>
           <div>State: {isDragging ? 'Dragging' : 'Idle'}</div>
+          <div>Presence: {presenceConnected ? '✅' : '❌'} | Sync: {syncStatus}</div>
+          <div>Online Users: {onlineUsers.length} | Other Cursors: {otherCursors.length}</div>
+          {userCursorColor && <div>My Color: <span style={{color: userCursorColor}}>●</span> {userCursorColor}</div>}
         </div>
       )}
     </div>

@@ -275,15 +275,15 @@ collabcanvas/
 **Testing:** ✅ Unit tests for cursor hook and color generation + Integration test for sync
 
 #### Tasks:
-- [ ] 4.1 Setup Firestore presence system
+- [x] 4.1 Setup Firestore presence system
   - **Files Modified:** `src/services/firestore.js`
   - **Content:** Functions to update/read user presence, heartbeat system
 
-- [ ] 4.2 Create color generation utility
+- [x] 4.2 Create color generation utility
   - **Files Created:** `src/utils/colors.js`
   - **Content:** `generateRandomColor()` function for cursor colors
 
-- [ ] 4.3 **🧪 UNIT TEST: Color generation**
+- [x] 4.3 **🧪 UNIT TEST: Color generation**
   - **Files Created:** `src/__tests__/utils/colors.test.js`
   - **Tests:**
     - Test `generateRandomColor()` returns valid hex color
@@ -292,15 +292,15 @@ collabcanvas/
     - Test randomness (call 10 times, get different results)
   - **Why:** Pure function, easy to test, critical for UX
 
-- [ ] 4.4 Assign cursor color when joining canvas
+- [x] 4.4 Assign cursor color when joining canvas
   - **Files Modified:** `src/hooks/usePresence.js` or `src/services/firestore.js`
   - **Content:** Generate and assign random color when user first joins canvas, store in presence document
 
-- [ ] 4.5 Create cursor tracking hook
+- [x] 4.5 Create cursor tracking hook
   - **Files Created:** `src/hooks/useCursor.js`
   - **Content:** Track local cursor position, throttle updates to 60 FPS
 
-- [ ] 4.6 **🧪 UNIT TEST: Cursor throttling**
+- [x] 4.6 **🧪 UNIT TEST: Cursor throttling**
   - **Files Created:** `src/__tests__/hooks/useCursor.test.js`
   - **Tests:**
     - Mock timers to test throttling works
@@ -309,40 +309,36 @@ collabcanvas/
     - Test cleanup on unmount
   - **Why:** Throttling is critical for performance, easy to test with mocks
 
-- [ ] 4.7 Create presence hook
+- [x] 4.7 Create presence hook
   - **Files Created:** `src/hooks/usePresence.js`
   - **Content:** Track online users, listen for presence changes
 
-- [ ] 4.8 Build Cursor component
+- [x] 4.8 Build Cursor component
   - **Files Created:** `src/components/Collaboration/Cursor.jsx`
   - **Content:** Render single cursor with name label, colored cursor icon
 
-- [ ] 4.9 Build CursorLayer component
+- [x] 4.9 Build CursorLayer component
   - **Files Created:** `src/components/Collaboration/CursorLayer.jsx`
   - **Content:** Render all other users' cursors on canvas
 
-- [ ] 4.10 Setup realtime cursor sync
+- [x] 4.10 Setup realtime cursor sync
   - **Files Created:** `src/services/realtime.js`
   - **Content:** Broadcast cursor position, listen to others' positions
 
-- [ ] 4.11 Integrate cursor layer into Canvas
+- [x] 4.11 Integrate cursor layer into Canvas
   - **Files Modified:** `src/components/Canvas/Canvas.jsx`
   - **Content:** Add CursorLayer above canvas objects
 
-- [ ] 4.12 Throttle cursor updates
+- [x] 4.12 Throttle cursor updates
   - **Files Modified:** `src/hooks/useCursor.js`
   - **Content:** Use requestAnimationFrame or lodash throttle (16ms)
 
-- [ ] 4.13 Hide name label on own cursor
-  - **Files Modified:** `src/components/Collaboration/Cursor.jsx`
-  - **Content:** Conditional rendering - no label if cursor is current user
-
-- [ ] 4.14 Test with multiple browser windows
+- [x] 4.13 Test with multiple browser windows
   - Open 2-3 browser windows
   - Log in as different users
   - Verify cursors sync smoothly
 
-- [ ] 4.15 **🧪 INTEGRATION TEST: Cursor sync**
+- [x] 4.14 **🧪 INTEGRATION TEST: Cursor sync**
   - **Files Created:** `src/__tests__/integration/cursor-sync.test.js`
   - **Tests:**
     - Mock Firebase listeners
@@ -352,16 +348,20 @@ collabcanvas/
     - Test cursor color assignment
   - **Why:** Critical feature, validates real-time sync logic without manual testing
 
+- [x] 4.15 Hide name label on own cursor
+  - **Files Modified:** `src/components/Collaboration/Cursor.jsx`
+  - **Content:** Conditional rendering - no label if cursor is current user
+
 **PR Checklist:**
-- [ ] Can see other users' cursors in real-time
-- [ ] Cursor positions update smoothly (<50ms delay)
-- [ ] Name labels show on others' cursors only
-- [ ] Own cursor visible but no name label
-- [ ] Cursor colors are distinct per user (assigned on canvas join)
-- [ ] Cursors update at ~60 FPS
-- [ ] No lag or jitter in cursor movement
-- [ ] ✅ Unit tests pass for cursor throttling and color generation
-- [ ] ✅ Integration test passes for cursor sync
+- [x] Can see other users' cursors in real-time
+- [x] Cursor positions update smoothly (<50ms delay)
+- [x] Name labels show on others' cursors only
+- [x] Own cursor visible but no name label
+- [x] Cursor colors are distinct per user (assigned on canvas join)
+- [x] Cursors update at ~60 FPS
+- [x] No lag or jitter in cursor movement
+- [x] ✅ Unit tests pass for cursor throttling and color generation
+- [x] ✅ Integration test passes for cursor sync
 
 ---
 
