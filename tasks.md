@@ -435,58 +435,40 @@ collabcanvas/
 ---
 
 ### PR #6: Rectangle Creation
-**Goal:** Users can drag-to-create rectangles  
+**Goal:** Users can create rectangles via toolbox and drag-to-create  
 **Time Estimate:** 2-3 hours  
 **Testing:** ✅ Unit test for Rectangle component
 
 #### Tasks:
-- [ ] 6.1 Create Rectangle component
-  - **Files Created:** `src/components/Canvas/Rectangle.jsx`
-  - **Content:** Konva Rect with props for position, size, color
+- [x] 6.1 Create Toolbox UI component
+  - **Files Created:** `src/components/Canvas/Toolbox.jsx`, `src/components/Canvas/Toolbox.css`
+  - **Content:** Modern floating toolbox with select/rectangle tools, keyboard shortcuts, accessibility
 
-- [ ] 6.2 **🧪 UNIT TEST: Rectangle component**
-  - **Files Created:** `src/__tests__/components/Rectangle.test.jsx`
+- [x] 6.2 Add toolbox to Canvas and handle creation mode
+  - **Files Modified:** `src/components/Canvas/Canvas.jsx`
+  - **Content:** Integrated toolbox with state management, keyboard shortcuts (V/R/ESC), cursor styles
+
+- [x] 6.3 Implement drag-to-create rectangle logic with visual feedback
+  - **Files Modified:** `src/hooks/useCanvas.js`, `src/components/Canvas/Canvas.jsx`
+  - **Content:** Full rectangle creation system with preview, coordinate transformation, user colors
+
+- [ ] 6.4 Create Rectangle component for rendering
+  - **Files Created:** `src/components/Canvas/Rectangle.jsx`
+  - **Content:** Konva Rect with props for position, size, color, selection states
+
+- [ ] 6.5 Save created rectangles to Firestore
+  - **Files Modified:** `src/services/firestore.js`
+  - **Content:** `createCanvasObject(canvasId, object)` function with proper data structure
+
+- [ ] 6.6 **🧪 UNIT TEST: Rectangle component**
+  - **Files Created:** `src/__tests__/components/Rectangle.test.jsx`  
   - **Tests:**
     - Render rectangle with correct dimensions
     - Test rectangle color matches props
     - Test position is correct
-    - Test rectangle is visible
+    - Test selection states and interactions
     - Mock Konva to avoid canvas issues in tests
   - **Why:** Core visual element, validates props are applied correctly
-
-- [ ] 6.3 Create CanvasObjects component
-  - **Files Created:** `src/components/Canvas/CanvasObjects.jsx`
-  - **Content:** Map over objects array and render Rectangle components
-
-- [ ] 6.4 Add rectangle creation to Canvas
-  - **Files Modified:** `src/components/Canvas/Canvas.jsx`
-  - **Content:** Mouse down/move/up handlers for drag-to-create
-
-- [ ] 6.5 Implement drag-to-create logic
-  - **Files Modified:** `src/hooks/useCanvas.js`
-  - **Content:** Track drag start, calculate width/height during drag, create object on mouse up
-
-- [ ] 6.6 Generate rectangle with user's cursor color
-  - **Files Modified:** `src/hooks/useCanvas.js`
-  - **Content:** Use current user's cursor color (from presence) for new rectangle
-
-- [ ] 6.7 Add rectangle to local state
-  - **Files Modified:** `src/hooks/useCanvas.js`
-  - **Content:** Add new rectangle to objects array
-
-- [ ] 6.8 Create Firestore write functions
-  - **Files Modified:** `src/services/firestore.js`
-  - **Content:** `createObject(canvasId, object)`, `updateObject(objectId, updates)`
-
-- [ ] 6.9 Save rectangle to Firestore
-  - **Files Modified:** `src/hooks/useCanvas.js`
-  - **Content:** After creating rectangle locally, save to Firestore
-
-- [ ] 6.10 Test rectangle creation
-  - Drag on canvas to create rectangles
-  - Verify size matches drag distance
-  - Verify color matches user's cursor color
-  - Check Firestore to confirm data saved
 
 **PR Checklist:**
 - [ ] Can create rectangles by dragging

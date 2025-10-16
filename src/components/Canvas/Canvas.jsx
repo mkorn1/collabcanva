@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Stage, Layer } from 'react-konva';
+import { Stage, Layer, Rect } from 'react-konva';
 import { 
   CANVAS_WIDTH, 
   CANVAS_HEIGHT
@@ -9,6 +9,7 @@ import { useAuth } from '../../hooks/useAuth.jsx';
 import { usePresence } from '../../hooks/usePresence.js';
 import { useRealtimeCursor } from '../../hooks/useRealtimeCursor.js';
 import CursorLayer from '../Collaboration/CursorLayer.jsx';
+import Toolbox from './Toolbox.jsx';
 
 const Canvas = () => {
   const {
@@ -19,11 +20,22 @@ const Canvas = () => {
     stageRef,
     startDragging,
     stopDragging,
-    isDragging
+    isDragging,
+    objects,
+    currentRectangle,
+    isCreatingRectangle,
+    startCreatingShape,
+    updateCreatingShape,
+    finishCreatingShape,
+    cancelCreatingShape
   } = useCanvas();
 
   // State for online users tooltip
   const [showOnlineUsersTooltip, setShowOnlineUsersTooltip] = useState(false);
+
+  // State for toolbox and creation mode
+  const [selectedTool, setSelectedTool] = useState('select');
+  const [creationMode, setCreationMode] = useState(null);
 
   // Get current authenticated user
   const { user } = useAuth();
@@ -55,6 +67,15 @@ const Canvas = () => {
     };
   });
 
+  // Calculate toolbox position for bottom left
+  const [toolboxPosition, setToolboxPosition] = useState(() => {
+    const headerHeight = 60;
+    return {
+      x: 20,
+      y: window.innerHeight - headerHeight - 180 // 180px for toolbox height + margin
+    };
+  });
+
   // Handle window resize
   useEffect(() => {
     const handleResize = () => {
@@ -62,6 +83,12 @@ const Canvas = () => {
       setStageSize({
         width: window.innerWidth,
         height: window.innerHeight - headerHeight
+      });
+      
+      // Update toolbox position on resize
+      setToolboxPosition({
+        x: 20,
+        y: window.innerHeight - headerHeight - 180
       });
     };
 
@@ -76,6 +103,46 @@ const Canvas = () => {
       return initializeCursorTracking(stageElement);
     }
   }, [initializeCursorTracking, user]);
+
+  // Handle tool selection from toolbox
+  const handleToolSelect = (toolId) => {
+    setSelectedTool(toolId);
+    
+    // Set creation mode based on tool
+    if (toolId === 'rectangle') {
+      setCreationMode('rectangle');
+    } else if (toolId === 'select') {
+      setCreationMode(null);
+    }
+  };
+
+  // Handle keyboard shortcuts for tools
+  useEffect(() => {
+    const handleKeyPress = (event) => {
+      // Don't handle shortcuts if user is typing in an input
+      if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+        return;
+      }
+
+      switch (event.key.toLowerCase()) {
+        case 'v':
+          handleToolSelect('select');
+          break;
+        case 'r':
+          handleToolSelect('rectangle');
+          break;
+        case 'escape':
+          if (isCreatingRectangle) {
+            cancelCreatingShape();
+          }
+          handleToolSelect('select');
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [isCreatingRectangle, cancelCreatingShape]);
 
   // Handle drag (pan) functionality
   const handleDragStart = () => {
@@ -109,13 +176,78 @@ const Canvas = () => {
     updateZoom(newScale, pointer);
   };
 
+  // Handle mouse events for creation mode
+  const handleStageMouseDown = (e) => {
+    // Don't create rectangles if clicking on existing objects
+    if (e.target !== e.target.getStage()) {
+      return;
+    }
+
+    const stage = e.target.getStage();
+    const pointerPos = stage.getPointerPosition();
+
+    if (creationMode === 'rectangle' && pointerPos) {
+      // Start rectangle creation
+      startCreatingShape('rectangle', pointerPos, {
+        userColor: userCursorColor || '#667eea'
+      });
+      return; // Don't start dragging when creating
+    }
+
+    // Handle normal canvas interactions (pan/drag)
+    handleDragStart();
+  };
+
+  // Handle mouse move for creation
+  const handleStageMouseMove = (e) => {
+    if (isCreatingRectangle) {
+      const stage = e.target.getStage();
+      const pointerPos = stage.getPointerPosition();
+      if (pointerPos) {
+        updateCreatingShape(pointerPos);
+      }
+    }
+  };
+
+  // Handle mouse up for creation
+  const handleStageMouseUp = (e) => {
+    if (isCreatingRectangle) {
+      const createdId = finishCreatingShape({
+        userColor: userCursorColor || '#667eea',
+        userId: user?.uid
+      });
+      
+      if (createdId) {
+        console.log('🎉 Rectangle created with ID:', createdId);
+      }
+      return;
+    }
+
+    // Handle normal drag end
+    const stage = e.target;
+    updatePanPosition({
+      x: stage.x(),
+      y: stage.y()
+    });
+    stopDragging();
+  };
+
+  // Update cursor based on creation mode
+  const getCursorStyle = () => {
+    if (creationMode === 'rectangle') {
+      return 'crosshair';
+    }
+    return isDragging ? 'grabbing' : 'grab';
+  };
+
   return (
     <div 
       className={`canvas-stage ${isDragging ? 'dragging' : ''}`}
       style={{
         width: '100%',
         height: '100%',
-        position: 'relative'
+        position: 'relative',
+        cursor: getCursorStyle()
       }}
     >
       <Stage
@@ -126,18 +258,51 @@ const Canvas = () => {
         y={panPosition.y}
         scaleX={zoom}
         scaleY={zoom}
-        draggable
+        draggable={!isCreatingRectangle}
         onDragStart={handleDragStart}
+        onMouseDown={handleStageMouseDown}
+        onMouseMove={handleStageMouseMove}
+        onMouseUp={handleStageMouseUp}
         onDragEnd={handleDragEnd}
         onWheel={handleWheel}
       >
         {/* Main canvas layer - this will contain all canvas objects */}
         <Layer>
-          {/* Canvas background - visual indicator of the canvas bounds */}
-          <React.Fragment>
-            {/* Grid pattern or canvas boundary could go here in the future */}
-            {/* For now, we have an empty layer ready for objects */}
-          </React.Fragment>
+          {/* Render existing objects */}
+          {objects.map((obj) => {
+            if (obj.type === 'rectangle') {
+              return (
+                <Rect
+                  key={obj.id}
+                  x={obj.x}
+                  y={obj.y}
+                  width={obj.width}
+                  height={obj.height}
+                  fill={obj.fill}
+                  stroke={obj.stroke}
+                  strokeWidth={obj.strokeWidth}
+                  opacity={obj.opacity}
+                />
+              );
+            }
+            return null;
+          })}
+          
+          {/* Render current rectangle being created (preview) */}
+          {currentRectangle && (
+            <Rect
+              key={currentRectangle.id}
+              x={currentRectangle.x}
+              y={currentRectangle.y}
+              width={currentRectangle.width}
+              height={currentRectangle.height}
+              fill={currentRectangle.fill}
+              stroke={currentRectangle.stroke}
+              strokeWidth={currentRectangle.strokeWidth}
+              opacity={currentRectangle.opacity}
+              dash={[5, 5]} // Dashed border for preview
+            />
+          )}
         </Layer>
 
         {/* Cursor layer for real-time multiplayer cursors */}
@@ -194,6 +359,14 @@ const Canvas = () => {
           {userCursorColor && <div>My Color: <span style={{color: userCursorColor}}>●</span> {userCursorColor}</div>}
         </div>
       )}
+
+      {/* Floating toolbox for shape creation */}
+      <Toolbox
+        selectedTool={selectedTool}
+        onToolSelect={handleToolSelect}
+        isVisible={true}
+        position={toolboxPosition}
+      />
     </div>
   );
 };
