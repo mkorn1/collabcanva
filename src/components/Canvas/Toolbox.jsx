@@ -1,16 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './Toolbox.css';
 
 /**
  * Floating toolbox for canvas tools and shape creation
- * Provides an intuitive UI for users to select creation tools
+ * Provides an intuitive UI for users to select creation tools and view debug info
  */
 const Toolbox = ({
   selectedTool = null,
   onToolSelect,
   isVisible = true,
-  position = { x: 20, y: 100 }
+  position = { x: 20, y: 100 },
+  // Debug info props
+  debugInfo = null
 }) => {
+  const [showOnlineUsersTooltip, setShowOnlineUsersTooltip] = useState(false);
+  const [isInfoExpanded, setIsInfoExpanded] = useState(true);
+  
   if (!isVisible) return null;
 
   const tools = [
@@ -78,6 +83,69 @@ const Toolbox = ({
         ))}
       </div>
       
+      {/* Information section - only show in development */}
+      {debugInfo && process.env.NODE_ENV === 'development' && (
+        <div className="toolbox-info">
+          <div className="info-header" onClick={() => setIsInfoExpanded(!isInfoExpanded)}>
+            <h4 className="info-title">Information</h4>
+            <span className={`info-toggle ${isInfoExpanded ? 'expanded' : 'collapsed'}`}>
+              {isInfoExpanded ? '▼' : '▶'}
+            </span>
+          </div>
+          {isInfoExpanded && (
+            <div className="info-items">
+              <div className="info-item">
+                <span className="info-label">Position:</span>
+                <span className="info-value">
+                  x:{Math.round(debugInfo.position.x)}, y:{Math.round(debugInfo.position.y)}
+                </span>
+              </div>
+              <div className="info-item">
+                <span className="info-label">Zoom:</span>
+                <span className="info-value">{(debugInfo.zoom * 100).toFixed(0)}%</span>
+              </div>
+              <div className="info-item">
+                <span className="info-label">Cursor:</span>
+                <span className="info-value">
+                  x:{Math.round(debugInfo.cursor.x)}, y:{Math.round(debugInfo.cursor.y)} 
+                  {debugInfo.cursor.isTracking ? ' (tracking)' : ' (idle)'}
+                </span>
+              </div>
+              <div className="info-item">
+                <span className="info-label">Online:</span>
+                <span className="info-value">
+                  {debugInfo.onlineUsers.length} users | 
+                  <span 
+                    className="hoverable-cursors"
+                    onMouseEnter={() => setShowOnlineUsersTooltip(true)}
+                    onMouseLeave={() => setShowOnlineUsersTooltip(false)}
+                  >
+                    {debugInfo.otherCursors.length} cursors
+                    {showOnlineUsersTooltip && debugInfo.onlineUsers.length > 0 && (
+                      <div className="online-users-tooltip">
+                        <div className="tooltip-header">Online Users:</div>
+                        {debugInfo.onlineUsers.map((onlineUser) => (
+                          <div key={onlineUser.id} className="tooltip-user">
+                            <span 
+                              className="user-color-dot" 
+                              style={{ backgroundColor: onlineUser.cursorColor }}
+                            ></span>
+                            <span className="user-name">
+                              {onlineUser.displayName || onlineUser.email || 'Anonymous'}
+                              {onlineUser.id === debugInfo.currentUserId && ' (You)'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </span>
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="toolbox-footer">
         <div className="creation-hint">
           {selectedTool === 'rectangle' ? (

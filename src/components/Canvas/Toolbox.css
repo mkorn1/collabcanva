@@ -212,8 +212,296 @@
 @media (prefers-reduced-motion: reduce) {
   .toolbox,
   .tool-button,
-  .toolbox:hover {
+  .toolbox:hover,
+  .info-header,
+  .info-toggle,
+  .info-items {
     transition: none;
     animation: none;
+  }
+}
+
+/* Information section */
+.toolbox-info {
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(0, 0, 0, 0.02);
+  margin: 8px 0;
+}
+
+.info-header {
+  padding: 8px 12px 4px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+  border-radius: 4px;
+  margin: 4px;
+}
+
+.info-header:hover {
+  background: rgba(102, 126, 234, 0.05);
+}
+
+.info-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4a5568;
+  letter-spacing: -0.01em;
+}
+
+.info-toggle {
+  font-size: 10px;
+  color: #718096;
+  transition: transform 0.15s ease, color 0.15s ease;
+  user-select: none;
+}
+
+.info-toggle.expanded {
+  transform: rotate(0deg);
+}
+
+.info-toggle.collapsed {
+  transform: rotate(-90deg);
+}
+
+.info-header:hover .info-toggle {
+  color: #667eea;
+}
+
+.info-items {
+  padding: 4px 12px 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  line-height: 1.3;
+}
+
+.info-label {
+  color: #718096;
+  font-weight: 500;
+  min-width: 50px;
+}
+
+.info-value {
+  color: #2d3748;
+  font-family: 'Monaco', 'SF Mono', monospace;
+  font-size: 9px;
+  text-align: right;
+  flex: 1;
+  margin-left: 8px;
+}
+
+/* Hoverable cursors style */
+.hoverable-cursors {
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  position: relative;
+}
+
+.hoverable-cursors:hover {
+  text-decoration-style: solid;
+}
+
+/* Online users tooltip - reuse existing styles from canvas debug but adapt for toolbox */
+.online-users-tooltip {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  min-width: 150px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  margin-bottom: 4px;
+}
+
+.tooltip-header {
+  font-weight: 600;
+  margin-bottom: 4px;
+  font-size: 10px;
+}
+
+.tooltip-user {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0;
+}
+
+.user-color-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.user-name {
+  font-size: 9px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Dark mode toolbox styles */
+.dark-mode .toolbox {
+  background: rgba(45, 55, 72, 0.95);
+  border-color: rgba(74, 85, 104, 0.3);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.dark-mode .toolbox:hover {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+.dark-mode .toolbox-title {
+  color: #f7fafc !important;
+}
+
+.dark-mode .tool-button {
+  color: #e2e8f0 !important;
+}
+
+.dark-mode .tool-name {
+  color: #e2e8f0 !important;
+}
+
+.dark-mode .tool-shortcut {
+  color: #a0aec0 !important;
+}
+
+.dark-mode .tool-button:hover {
+  background: rgba(102, 126, 234, 0.2);
+  color: #a78bfa;
+}
+
+.dark-mode .tool-button:focus {
+  outline-color: #667eea;
+  background: rgba(102, 126, 234, 0.2);
+}
+
+.dark-mode .tool-button.active {
+  background: #667eea;
+  color: white;
+}
+
+.dark-mode .tool-button.active:hover {
+  background: #5a67d8;
+}
+
+.dark-mode .tool-shortcut {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dark-mode .tool-button.active .tool-shortcut {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.dark-mode .toolbox-footer {
+  background: rgba(0, 0, 0, 0.2);
+  border-top-color: rgba(74, 85, 104, 0.3);
+}
+
+.dark-mode .creation-hint {
+  color: #a0aec0 !important;
+}
+
+/* Dark mode information section */
+.dark-mode .toolbox-info {
+  background: rgba(0, 0, 0, 0.2);
+  border-top-color: rgba(74, 85, 104, 0.3);
+}
+
+.dark-mode .info-header:hover {
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.dark-mode .info-title {
+  color: #f7fafc !important;
+}
+
+.dark-mode .info-toggle {
+  color: #a0aec0 !important;
+}
+
+.dark-mode .info-header:hover .info-toggle {
+  color: #a78bfa !important;
+}
+
+.dark-mode .info-label {
+  color: #a0aec0 !important;
+}
+
+.dark-mode .info-value {
+  color: #e2e8f0 !important;
+}
+
+.dark-mode .hoverable-cursors {
+  color: #a78bfa !important;
+}
+
+.dark-mode .hoverable-cursors:hover {
+  color: #c4b5fd !important;
+}
+
+.dark-mode .online-users-tooltip {
+  background: rgba(0, 0, 0, 0.95) !important;
+  color: #f7fafc !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark-mode .tooltip-header {
+  color: #f7fafc !important;
+}
+
+.dark-mode .tooltip-user {
+  color: #e2e8f0 !important;
+}
+
+.dark-mode .user-name {
+  color: #e2e8f0 !important;
+}
+
+/* Responsive info section */
+@media (max-width: 768px) {
+  .info-item {
+    font-size: 9px;
+  }
+  
+  .info-value {
+    font-size: 8px;
+  }
+  
+  .info-title {
+    font-size: 11px;
+  }
+  
+  .online-users-tooltip {
+    right: -20px;
+    min-width: 120px;
   }
 }

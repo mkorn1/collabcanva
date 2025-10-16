@@ -72,7 +72,7 @@ const Canvas = () => {
     const headerHeight = 60;
     return {
       x: 20,
-      y: window.innerHeight - headerHeight - 180 // 180px for toolbox height + margin
+      y: window.innerHeight - headerHeight - 300 // Increased space for debug info + margin
     };
   });
 
@@ -88,7 +88,7 @@ const Canvas = () => {
       // Update toolbox position on resize
       setToolboxPosition({
         x: 20,
-        y: window.innerHeight - headerHeight - 180
+        y: window.innerHeight - headerHeight - 300
       });
     };
 
@@ -366,6 +366,18 @@ const Canvas = () => {
         onToolSelect={handleToolSelect}
         isVisible={true}
         position={toolboxPosition}
+        debugInfo={{
+          position: panPosition,
+          zoom: zoom,
+          cursor: {
+            x: cursorPosition.x,
+            y: cursorPosition.y,
+            isTracking: isTracking
+          },
+          onlineUsers: onlineUsers,
+          otherCursors: otherCursors,
+          currentUserId: user?.uid
+        }}
       />
     </div>
   );

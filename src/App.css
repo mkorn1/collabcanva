@@ -275,6 +275,7 @@ p, div, span {
   bottom: 0;
   overflow: hidden;
   background: #f8f9fa;
+  transition: background-color 0.25s ease;
 }
 
 /* Canvas stage (inner Konva container) */
@@ -292,6 +293,7 @@ p, div, span {
   background: #f8f9fa !important;
   outline: none !important;
   border: none !important;
+  transition: background-color 0.25s ease !important;
 }
 
 .konvajs-content canvas {
@@ -317,6 +319,170 @@ p, div, span {
 .canvas-container {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* ============================================
+   DARK MODE STYLES
+   ============================================ */
+
+/* Dark mode root styles */
+.dark-mode {
+  color-scheme: dark;
+}
+
+.dark-mode .App {
+  background-color: #1a202c;
+  color: #e2e8f0;
+}
+
+.dark-mode .canvas-app {
+  background-color: #1a202c;
+}
+
+/* Dark mode header */
+.dark-mode .canvas-header {
+  background: #2d3748;
+  border-bottom-color: #4a5568;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.dark-mode .canvas-header h1 {
+  color: #f7fafc !important;
+}
+
+.dark-mode .canvas-header .user-welcome {
+  color: #a0aec0 !important;
+}
+
+/* Dark mode cursor indicator */
+.dark-mode .cursor-indicator {
+  background: #374151;
+  border-color: #4a5568;
+}
+
+.dark-mode .cursor-label {
+  color: #a0aec0 !important;
+}
+
+/* Dark mode sign out button */
+.dark-mode .header-sign-out {
+  background: #374151 !important;
+  border-color: #4a5568 !important;
+  color: #e2e8f0 !important;
+}
+
+.dark-mode .header-sign-out:hover {
+  background: #4a5568 !important;
+  border-color: #6b7280 !important;
+  color: #f7fafc !important;
+}
+
+/* Dark mode canvas container */
+.dark-mode .canvas-container {
+  background: #1a202c;
+}
+
+.dark-mode .konvajs-content {
+  background: #1a202c !important;
+}
+
+/* Dark mode auth forms */
+.dark-mode .auth-container {
+  background: #2d3748;
+  color: #e2e8f0;
+}
+
+.dark-mode .auth-form {
+  background: #374151;
+  border-color: #4a5568;
+}
+
+.dark-mode .auth-form h2 {
+  color: #f7fafc !important;
+}
+
+.dark-mode .auth-form input {
+  background: #2d3748 !important;
+  border-color: #4a5568 !important;
+  color: #e2e8f0 !important;
+}
+
+.dark-mode .auth-form input:focus {
+  border-color: #667eea !important;
+  background: #374151 !important;
+}
+
+.dark-mode .auth-form input::placeholder {
+  color: #9ca3af !important;
+}
+
+.dark-mode .auth-form .auth-button.primary {
+  background-color: #667eea !important;
+  color: white !important;
+}
+
+.dark-mode .auth-form .auth-button.primary:hover {
+  background-color: #5a67d8 !important;
+}
+
+.dark-mode .auth-form .auth-button.secondary {
+  background-color: #4a5568 !important;
+  color: #e2e8f0 !important;
+  border-color: #6b7280 !important;
+}
+
+.dark-mode .auth-form .auth-button.secondary:hover {
+  background-color: #6b7280 !important;
+}
+
+/* Dark mode loading screen */
+.dark-mode .loading-container {
+  background: #1a202c;
+  color: #e2e8f0;
+}
+
+.dark-mode .loading-content p {
+  color: #a0aec0 !important;
+}
+
+/* Dark mode spinner */
+.dark-mode .spinner {
+  border-top-color: #667eea;
+  border-right-color: #667eea;
+}
+
+/* Dark mode debug canvas */
+.dark-mode .canvas-debug {
+  background: rgba(0, 0, 0, 0.9);
+  color: #f7fafc !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark-mode .canvas-debug div {
+  color: #e2e8f0 !important;
+}
+
+.dark-mode .hoverable-text {
+  color: #a78bfa !important;
+}
+
+.dark-mode .hoverable-text:hover {
+  background: rgba(167, 139, 250, 0.2);
+  color: #c4b5fd !important;
+}
+
+.dark-mode .online-users-tooltip {
+  background: rgba(0, 0, 0, 0.95);
+  color: #f7fafc !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark-mode .tooltip-header {
+  color: #f7fafc !important;
+}
+
+.dark-mode .tooltip-user .user-name {
+  color: #e2e8f0 !important;
 }
 
 /* Debug info styling */

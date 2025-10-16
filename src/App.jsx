@@ -8,6 +8,10 @@ import { app, auth, db } from './services/firebase'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import AuthForm from './components/Auth/AuthForm'
 
+// Import Dark Mode provider and toggle
+import { DarkModeProvider } from './hooks/useDarkMode'
+import DarkModeToggle from './components/Layout/DarkModeToggle'
+
 // Import Canvas component
 import Canvas from './components/Canvas/Canvas'
 
@@ -45,6 +49,7 @@ function MainApp() {
               <span className="cursor-label">Your cursor</span>
             </div>
           )}
+          <DarkModeToggle />
           <button 
             onClick={handleSignOut}
             className="header-sign-out"
@@ -149,11 +154,13 @@ function AppContent() {
 // Root App component
 function App() {
   return (
-    <AuthProvider>
-      <div className="App">
-        <AppContent />
-      </div>
-    </AuthProvider>
+    <DarkModeProvider>
+      <AuthProvider>
+        <div className="App">
+          <AppContent />
+        </div>
+      </AuthProvider>
+    </DarkModeProvider>
   )
 }
 
