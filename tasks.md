@@ -452,13 +452,13 @@ collabcanvas/
   - **Files Modified:** `src/hooks/useCanvas.js`, `src/components/Canvas/Canvas.jsx`
   - **Content:** Full rectangle creation system with preview, coordinate transformation, user colors
 
-- [ ] 6.4 Create Rectangle component for rendering
+- [x] 6.4 Create Rectangle component for rendering & selection
   - **Files Created:** `src/components/Canvas/Rectangle.jsx`
-  - **Content:** Konva Rect with props for position, size, color, selection states
+  - **Content:** Full-featured component with click selection, drag movement, event handling, performance optimization
 
-- [ ] 6.5 Save created rectangles to Firestore
-  - **Files Modified:** `src/services/firestore.js`
-  - **Content:** `createCanvasObject(canvasId, object)` function with proper data structure
+- [x] 6.5 Save created rectangles to Firestore with real-time sync
+  - **Files Modified:** `src/hooks/useCanvas.js`, `src/components/Canvas/Canvas.jsx`, `src/App.css`
+  - **Content:** Complete Firestore integration with real-time sync, loading states, error handling
 
 - [ ] 6.6 **🧪 UNIT TEST: Rectangle component**
   - **Files Created:** `src/__tests__/components/Rectangle.test.jsx`  
@@ -471,12 +471,17 @@ collabcanvas/
   - **Why:** Core visual element, validates props are applied correctly
 
 **PR Checklist:**
-- [ ] Can create rectangles by dragging
-- [ ] Rectangle size matches drag distance
-- [ ] Rectangle color matches user's cursor color (from presence)
-- [ ] Rectangles save to Firestore
-- [ ] Can create multiple rectangles
-- [ ] No errors in console
+- [x] Can create rectangles by dragging with toolbox
+- [x] Rectangle size matches drag distance
+- [x] Rectangle color matches user's cursor color (from presence) 
+- [x] Rectangles save to Firestore with real-time sync
+- [x] Can create multiple rectangles
+- [x] Can select rectangles by clicking (blue outline)
+- [x] Can move rectangles by dragging selected ones
+- [x] Multiplayer sync - rectangles appear instantly for all users
+- [x] Loading states and error handling for sync issues
+- [x] Professional UI with keyboard shortcuts (V/R/ESC)
+- [x] Event handling prevents canvas pan when interacting with rectangles
 - [ ] ✅ Unit tests pass for Rectangle component
 
 ---

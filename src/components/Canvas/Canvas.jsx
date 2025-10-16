@@ -10,8 +10,13 @@ import { usePresence } from '../../hooks/usePresence.js';
 import { useRealtimeCursor } from '../../hooks/useRealtimeCursor.js';
 import CursorLayer from '../Collaboration/CursorLayer.jsx';
 import Toolbox from './Toolbox.jsx';
+import Rectangle from './Rectangle.jsx';
 
 const Canvas = () => {
+  // Get current authenticated user FIRST
+  const { user } = useAuth();
+
+  // Now we can use 'user' in other hooks
   const {
     zoom,
     panPosition,
@@ -22,13 +27,19 @@ const Canvas = () => {
     stopDragging,
     isDragging,
     objects,
+    selectedObjectId,
     currentRectangle,
     isCreatingRectangle,
+    isLoading,
+    syncError,
     startCreatingShape,
     updateCreatingShape,
     finishCreatingShape,
-    cancelCreatingShape
-  } = useCanvas();
+    cancelCreatingShape,
+    selectObject,
+    deselectObject,
+    updateObject
+  } = useCanvas('main', user);
 
   // State for online users tooltip
   const [showOnlineUsersTooltip, setShowOnlineUsersTooltip] = useState(false);
@@ -36,9 +47,6 @@ const Canvas = () => {
   // State for toolbox and creation mode
   const [selectedTool, setSelectedTool] = useState('select');
   const [creationMode, setCreationMode] = useState(null);
-
-  // Get current authenticated user
-  const { user } = useAuth();
 
   // Get presence data for online users
   const { 
@@ -176,15 +184,18 @@ const Canvas = () => {
     updateZoom(newScale, pointer);
   };
 
-  // Handle mouse events for creation mode
+  // Handle stage clicks (empty canvas area only)
   const handleStageMouseDown = (e) => {
-    // Don't create rectangles if clicking on existing objects
+    // Only handle clicks on the Stage itself (empty canvas)
     if (e.target !== e.target.getStage()) {
       return;
     }
 
     const stage = e.target.getStage();
     const pointerPos = stage.getPointerPosition();
+
+    // Deselect any selected objects when clicking empty canvas
+    deselectObject();
 
     if (creationMode === 'rectangle' && pointerPos) {
       // Start rectangle creation
@@ -196,6 +207,21 @@ const Canvas = () => {
 
     // Handle normal canvas interactions (pan/drag)
     handleDragStart();
+  };
+
+  // Handle rectangle selection
+  const handleRectangleSelect = (rectangleId) => {
+    selectObject(rectangleId);
+  };
+
+  // Handle rectangle movement
+  const handleRectangleMove = async (rectangleId, newPosition) => {
+    try {
+      await updateObject(rectangleId, newPosition);
+      console.log('✅ Rectangle moved:', rectangleId, newPosition);
+    } catch (error) {
+      console.error('❌ Failed to move rectangle:', error);
+    }
   };
 
   // Handle mouse move for creation
@@ -240,6 +266,15 @@ const Canvas = () => {
     return isDragging ? 'grabbing' : 'grab';
   };
 
+  // Quick debug: log current state
+  console.log('Canvas render state:', {
+    isLoading,
+    syncError,
+    objectsCount: objects?.length || 0,
+    selectedObjectId,
+    user: user?.uid || 'no-user'
+  });
+
   return (
     <div 
       className={`canvas-stage ${isDragging ? 'dragging' : ''}`}
@@ -258,7 +293,7 @@ const Canvas = () => {
         y={panPosition.y}
         scaleX={zoom}
         scaleY={zoom}
-        draggable={!isCreatingRectangle}
+        draggable={!isCreatingRectangle && !selectedObjectId}
         onDragStart={handleDragStart}
         onMouseDown={handleStageMouseDown}
         onMouseMove={handleStageMouseMove}
@@ -272,16 +307,12 @@ const Canvas = () => {
           {objects.map((obj) => {
             if (obj.type === 'rectangle') {
               return (
-                <Rect
+                <Rectangle
                   key={obj.id}
-                  x={obj.x}
-                  y={obj.y}
-                  width={obj.width}
-                  height={obj.height}
-                  fill={obj.fill}
-                  stroke={obj.stroke}
-                  strokeWidth={obj.strokeWidth}
-                  opacity={obj.opacity}
+                  rectangle={obj}
+                  isSelected={selectedObjectId === obj.id}
+                  onSelect={handleRectangleSelect}
+                  onMove={handleRectangleMove}
                 />
               );
             }
@@ -320,6 +351,23 @@ const Canvas = () => {
         </Layer>
       </Stage>
 
+      {/* Canvas loading state */}
+      {isLoading && (
+        <div className="canvas-loading">
+          <div className="loading-spinner"></div>
+          Loading canvas objects...
+        </div>
+      )}
+
+      {/* Sync error notification */}
+      {syncError && (
+        <div className="canvas-error">
+          <div className="error-message">
+            ⚠️ Sync Error: {syncError}
+          </div>
+        </div>
+      )}
+
       {/* Debug info (development only) */}
       {process.env.NODE_ENV === 'development' && (
         <div className="canvas-debug">
@@ -328,7 +376,8 @@ const Canvas = () => {
           <div>Position: x:{Math.round(panPosition.x)}, y:{Math.round(panPosition.y)}</div>
           <div>Cursor: x:{Math.round(cursorPosition.x)}, y:{Math.round(cursorPosition.y)} {isTracking ? '(tracking)' : '(idle)'}</div>
           <div>State: {isDragging ? 'Dragging' : 'Idle'}</div>
-          <div>Presence: {presenceConnected ? '✅' : '❌'} | Sync: {syncStatus}</div>
+          <div>Presence: {presenceConnected ? '✅' : '❌'} | Cursor Sync: {syncStatus} | Objects: {syncError ? '❌' : '✅'}</div>
+          <div>Objects: {objects.length} | Selected: {selectedObjectId ? '🟦' : '➖'} | Creating: {isCreatingRectangle ? '🟦' : '➖'}</div>
           <div>
             Online Users: {onlineUsers.length} | 
             <span 

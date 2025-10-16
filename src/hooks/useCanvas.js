@@ -221,10 +221,18 @@ export const useCanvas = (canvasId = 'main', user = null) => {
 
     console.log('🔄 Setting up canvas object sync for canvas:', canvasId);
 
+    // Set a timeout to prevent infinite loading
+    const loadingTimeout = setTimeout(() => {
+      console.warn('⏰ Loading timeout reached, continuing with local-only mode');
+      setIsLoading(false);
+      setSyncError('Connection timeout - using local mode');
+    }, 5000);
+
     try {
       // Listen to real-time object changes
       const unsubscribe = listenToObjects(canvasId, (firestoreObjects) => {
         console.log('📡 Received object update from Firestore:', firestoreObjects.length, 'objects');
+        clearTimeout(loadingTimeout);
         setObjects(firestoreObjects);
         setIsLoading(false);
         setSyncError(null);
@@ -234,12 +242,14 @@ export const useCanvas = (canvasId = 'main', user = null) => {
 
     } catch (error) {
       console.error('❌ Error setting up object sync:', error);
+      clearTimeout(loadingTimeout);
       setSyncError(error.message);
       setIsLoading(false);
     }
 
     // Cleanup on unmount or canvasId change
     return () => {
+      clearTimeout(loadingTimeout);
       if (objectsUnsubscribeRef.current) {
         console.log('🧹 Cleaning up object sync');
         objectsUnsubscribeRef.current();
