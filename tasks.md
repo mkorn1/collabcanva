@@ -88,42 +88,42 @@ collabcanvas/
 **Testing:** Manual verification only (no unit tests needed)
 
 #### Tasks:
-- [x] Initialize React app with Create React App or Vite
+- [x] 1.1 Initialize React app with Create React App or Vite
   - **Files:** All base files in structure above
   
-- [x] Install core dependencies
+- [x] 1.2 Install core dependencies
   - **Command:** `npm install firebase react-konva konva`
   - **Command:** `npm install --save-dev @testing-library/react @testing-library/jest-dom @testing-library/user-event vitest jsdom`
   - **Files:** `package.json`, `package-lock.json`
 
-- [x] Setup Firebase project in console
+- [x] 1.3 Setup Firebase project in console
   - Create new Firebase project
   - Enable Firestore Database
   - Enable Authentication (Email/Password)
   - Get Firebase config credentials
 
-- [x] Configure Firebase in project
+- [x] 1.4 Configure Firebase in project
   - **Files Created:** `src/services/firebase.js`, `.env`, `.env.example`
   - **Content:** Firebase initialization, config from environment variables
 
-- [x] Create basic app structure
+- [x] 1.5 Create basic app structure
   - **Files Created:** `src/App.jsx`, `src/App.css`, `src/index.js`
   - **Content:** Simple "Hello World" component
 
-- [x] Setup environment variables
+- [x] 1.6 Setup environment variables
   - **Files Created:** `.env` (gitignored), `.env.example`
   - **Content:** Firebase API keys and config
 
-- [x] Configure .gitignore
+- [x] 1.7 Configure .gitignore
   - **Files:** `.gitignore`
   - **Content:** Add `/node_modules`, `.env`, build folders
 
-- [x] Deploy to hosting platform
+- [x] 1.8 Deploy to hosting platform
   - Choose: Vercel, Firebase Hosting, or AWS
   - Test public URL works
   - **Files:** May need `vercel.json` or `firebase.json`
 
-- [x] Update README with setup instructions
+- [x] 1.9 Update README with setup instructions
   - **Files:** `README.md`
   - **Content:** How to install, configure Firebase, run locally, run tests
 
@@ -142,11 +142,11 @@ collabcanvas/
 **Testing:** ✅ Unit tests for auth service functions
 
 #### Tasks:
-- [x] Create auth service functions
+- [x] 2.1 Create auth service functions
   - **Files Created:** `src/services/auth.js`
   - **Functions:** `signUp(email, password, displayName)`, `signIn(email, password)`, `signOut()`, `getCurrentUser()`
 
-- [x] **🧪 UNIT TEST: Auth service functions**
+- [x] 2.2 **🧪 UNIT TEST: Auth service functions**
   - **Files Created:** `src/__tests__/services/auth.test.js`
   - **Tests:**
     - Mock Firebase auth methods
@@ -157,31 +157,31 @@ collabcanvas/
     - Test error handling for invalid credentials
   - **Why:** Auth is critical and pure functions are easy to test
 
-- [x] Create auth context/hook
+- [x] 2.3 Create auth context/hook
   - **Files Created:** `src/hooks/useAuth.js`
   - **Content:** Custom hook for auth state, user object, loading state
 
-- [x] Build Signup component
+- [x] 2.4 Build Signup component
   - **Files Created:** `src/components/Auth/Signup.jsx`
   - **Content:** Email, password, optional display name inputs, error handling
   
-- [x] Build Login component
+- [x] 2.5 Build Login component
   - **Files Created:** `src/components/Auth/Login.jsx`
   - **Content:** Email, password inputs, error handling
 
-- [x] Create auth form wrapper
+- [x] 2.6 Create auth form wrapper
   - **Files Created:** `src/components/Auth/AuthForm.jsx`
   - **Content:** Switch between login/signup, styling
 
-- [x] Update App.jsx with auth routing
+- [x] 2.7 Update App.jsx with auth routing
   - **Files Modified:** `src/App.jsx`
   - **Content:** Show auth forms if not logged in, show canvas if logged in
 
-- [x] Store user profile in Firestore
+- [x] 2.8 Store user profile in Firestore
   - **Files Modified:** `src/services/firestore.js`
   - **Content:** Create user document with `{ id, email, displayName, createdAt }`
 
-- [x] Test authentication flow
+- [x] 2.9 Test authentication flow
   - Sign up new user
   - Log out
   - Log back in
@@ -204,11 +204,11 @@ collabcanvas/
 **Testing:** ✅ Unit tests for canvas helper utilities
 
 #### Tasks:
-- [ ] Create constants file
+- [x] 3.1 Create constants file
   - **Files Created:** `src/utils/constants.js`
   - **Content:** `CANVAS_WIDTH = 4000`, `CANVAS_HEIGHT = 4000`, `INITIAL_ZOOM = 1`
 
-- [ ] **🧪 UNIT TEST: Constants**
+- [x] 3.2 **🧪 UNIT TEST: Constants**
   - **Files Created:** `src/__tests__/utils/constants.test.js`
   - **Tests:**
     - Verify canvas dimensions are correct
@@ -216,27 +216,31 @@ collabcanvas/
     - Test all constants are exported
   - **Why:** Simple validation, ensures no typos
 
-- [ ] Build main Canvas component
+- [x] 3.3 Build main Canvas component
   - **Files Created:** `src/components/Canvas/Canvas.jsx`
   - **Content:** Konva Stage and Layer setup, 4000x4000 workspace
 
-- [ ] Implement pan functionality
+- [x] 3.4 Add canvas to App
+  - **Files Modified:** `src/App.jsx`
+  - **Content:** Render Canvas component when user is authenticated
+
+- [x] 3.5 Implement pan functionality
   - **Files Modified:** `src/components/Canvas/Canvas.jsx`
   - **Content:** Drag Stage to pan, track stage position
 
-- [ ] Implement zoom functionality
+- [x] 3.6 Implement zoom functionality
   - **Files Modified:** `src/components/Canvas/Canvas.jsx`
   - **Content:** Mouse wheel to zoom, pinch to zoom, limit zoom levels (0.1x to 5x)
 
-- [ ] Add canvas state hook
+- [x] 3.7 Add canvas state hook
   - **Files Created:** `src/hooks/useCanvas.js`
   - **Content:** Manage canvas state (objects array, selected object, zoom, pan position)
 
-- [ ] Create canvas helpers
+- [x] 3.8 Create canvas helpers
   - **Files Created:** `src/utils/canvasHelpers.js`
   - **Content:** Helper functions for coordinate transformations, bounds checking
 
-- [ ] **🧪 UNIT TEST: Canvas helpers**
+- [x] 3.9 **🧪 UNIT TEST: Canvas helpers**
   - **Files Created:** `src/__tests__/utils/canvasHelpers.test.js`
   - **Tests:**
     - Test coordinate transformation (screen to canvas)
@@ -245,27 +249,23 @@ collabcanvas/
     - Test edge cases (negative coords, out of bounds)
   - **Why:** Math-heavy pure functions, prone to off-by-one errors
 
-- [ ] Style canvas container
+- [x] 3.10 Style canvas container
   - **Files Modified:** `src/App.css`
   - **Content:** Full-screen canvas, no scrollbars, cursor styles
 
-- [ ] Add canvas to App
-  - **Files Modified:** `src/App.jsx`
-  - **Content:** Render Canvas component when user is authenticated
-
-- [ ] Test pan and zoom performance
+- [x] 3.11 Test pan and zoom performance
   - Verify 60 FPS during pan/zoom
   - Test on trackpad and mouse
   - Test zoom limits work
 
 **PR Checklist:**
-- [ ] Canvas renders at 4000x4000
-- [ ] Smooth panning with mouse drag
-- [ ] Smooth zooming with wheel/pinch
-- [ ] Zoom limits prevent extreme zoom levels
-- [ ] No visible boundaries (feels infinite)
-- [ ] 60 FPS maintained during interactions
-- [ ] ✅ All unit tests pass for canvas helpers
+- [x] Canvas renders at 4000x4000
+- [x] Smooth panning with mouse drag
+- [x] Smooth zooming with wheel/pinch
+- [x] Zoom limits prevent extreme zoom levels
+- [x] No visible boundaries (feels infinite)
+- [x] 60 FPS maintained during interactions
+- [x] ✅ All unit tests pass for canvas helpers
 
 ---
 
@@ -275,15 +275,15 @@ collabcanvas/
 **Testing:** ✅ Unit tests for cursor hook and color generation + Integration test for sync
 
 #### Tasks:
-- [ ] Setup Firestore presence system
+- [ ] 4.1 Setup Firestore presence system
   - **Files Modified:** `src/services/firestore.js`
   - **Content:** Functions to update/read user presence, heartbeat system
 
-- [ ] Create color generation utility
+- [ ] 4.2 Create color generation utility
   - **Files Created:** `src/utils/colors.js`
   - **Content:** `generateRandomColor()` function for cursor colors
 
-- [ ] **🧪 UNIT TEST: Color generation**
+- [ ] 4.3 **🧪 UNIT TEST: Color generation**
   - **Files Created:** `src/__tests__/utils/colors.test.js`
   - **Tests:**
     - Test `generateRandomColor()` returns valid hex color
@@ -292,15 +292,15 @@ collabcanvas/
     - Test randomness (call 10 times, get different results)
   - **Why:** Pure function, easy to test, critical for UX
 
-- [ ] Assign cursor color when joining canvas
+- [ ] 4.4 Assign cursor color when joining canvas
   - **Files Modified:** `src/hooks/usePresence.js` or `src/services/firestore.js`
   - **Content:** Generate and assign random color when user first joins canvas, store in presence document
 
-- [ ] Create cursor tracking hook
+- [ ] 4.5 Create cursor tracking hook
   - **Files Created:** `src/hooks/useCursor.js`
   - **Content:** Track local cursor position, throttle updates to 60 FPS
 
-- [ ] **🧪 UNIT TEST: Cursor throttling**
+- [ ] 4.6 **🧪 UNIT TEST: Cursor throttling**
   - **Files Created:** `src/__tests__/hooks/useCursor.test.js`
   - **Tests:**
     - Mock timers to test throttling works
@@ -309,40 +309,40 @@ collabcanvas/
     - Test cleanup on unmount
   - **Why:** Throttling is critical for performance, easy to test with mocks
 
-- [ ] Create presence hook
+- [ ] 4.7 Create presence hook
   - **Files Created:** `src/hooks/usePresence.js`
   - **Content:** Track online users, listen for presence changes
 
-- [ ] Build Cursor component
+- [ ] 4.8 Build Cursor component
   - **Files Created:** `src/components/Collaboration/Cursor.jsx`
   - **Content:** Render single cursor with name label, colored cursor icon
 
-- [ ] Build CursorLayer component
+- [ ] 4.9 Build CursorLayer component
   - **Files Created:** `src/components/Collaboration/CursorLayer.jsx`
   - **Content:** Render all other users' cursors on canvas
 
-- [ ] Setup realtime cursor sync
+- [ ] 4.10 Setup realtime cursor sync
   - **Files Created:** `src/services/realtime.js`
   - **Content:** Broadcast cursor position, listen to others' positions
 
-- [ ] Integrate cursor layer into Canvas
+- [ ] 4.11 Integrate cursor layer into Canvas
   - **Files Modified:** `src/components/Canvas/Canvas.jsx`
   - **Content:** Add CursorLayer above canvas objects
 
-- [ ] Throttle cursor updates
+- [ ] 4.12 Throttle cursor updates
   - **Files Modified:** `src/hooks/useCursor.js`
   - **Content:** Use requestAnimationFrame or lodash throttle (16ms)
 
-- [ ] Hide name label on own cursor
+- [ ] 4.13 Hide name label on own cursor
   - **Files Modified:** `src/components/Collaboration/Cursor.jsx`
   - **Content:** Conditional rendering - no label if cursor is current user
 
-- [ ] Test with multiple browser windows
+- [ ] 4.14 Test with multiple browser windows
   - Open 2-3 browser windows
   - Log in as different users
   - Verify cursors sync smoothly
 
-- [ ] **🧪 INTEGRATION TEST: Cursor sync**
+- [ ] 4.15 **🧪 INTEGRATION TEST: Cursor sync**
   - **Files Created:** `src/__tests__/integration/cursor-sync.test.js`
   - **Tests:**
     - Mock Firebase listeners
@@ -371,11 +371,11 @@ collabcanvas/
 **Testing:** ✅ Unit test for PresenceList component
 
 #### Tasks:
-- [ ] Build PresenceList component
+- [ ] 5.1 Build PresenceList component
   - **Files Created:** `src/components/Collaboration/PresenceList.jsx`
   - **Content:** Display list of online users (names only)
 
-- [ ] **🧪 UNIT TEST: PresenceList component**
+- [ ] 5.2 **🧪 UNIT TEST: PresenceList component**
   - **Files Created:** `src/__tests__/components/PresenceList.test.jsx`
   - **Tests:**
     - Render with empty user list (shows "No users online")
@@ -385,35 +385,35 @@ collabcanvas/
     - Test sorting (alphabetical or by join time)
   - **Why:** UI component, easy to test rendering logic
 
-- [ ] Update presence on login
+- [ ] 5.3 Update presence on login
   - **Files Modified:** `src/services/auth.js`
   - **Content:** Set user as "online" in Firestore on login
 
-- [ ] Update presence on logout
+- [ ] 5.4 Update presence on logout
   - **Files Modified:** `src/services/auth.js`
   - **Content:** Set user as "offline" on logout
 
-- [ ] Handle disconnect/tab close
+- [ ] 5.5 Handle disconnect/tab close
   - **Files Modified:** `src/hooks/usePresence.js`
   - **Content:** Use Firebase onDisconnect() to cleanup presence
 
-- [ ] Implement heartbeat system
+- [ ] 5.6 Implement heartbeat system
   - **Files Modified:** `src/hooks/usePresence.js`
   - **Content:** Update "lastSeen" timestamp every 30 seconds
 
-- [ ] Listen for presence changes
+- [ ] 5.7 Listen for presence changes
   - **Files Modified:** `src/hooks/usePresence.js`
   - **Content:** Real-time listener for users collection, filter online users
 
-- [ ] Add PresenceList to UI
+- [ ] 5.8 Add PresenceList to UI
   - **Files Modified:** `src/App.jsx` or create `src/components/Layout/Header.jsx`
   - **Content:** Show presence list in header or sidebar
 
-- [ ] Style presence list
+- [ ] 5.9 Style presence list
   - **Files Modified:** `src/App.css`
   - **Content:** Clean design, show user count, list of names
 
-- [ ] Test presence detection
+- [ ] 5.10 Test presence detection
   - Open multiple browsers
   - Verify users appear when they join
   - Close tab and verify user removed
@@ -436,11 +436,11 @@ collabcanvas/
 **Testing:** ✅ Unit test for Rectangle component
 
 #### Tasks:
-- [ ] Create Rectangle component
+- [ ] 6.1 Create Rectangle component
   - **Files Created:** `src/components/Canvas/Rectangle.jsx`
   - **Content:** Konva Rect with props for position, size, color
 
-- [ ] **🧪 UNIT TEST: Rectangle component**
+- [ ] 6.2 **🧪 UNIT TEST: Rectangle component**
   - **Files Created:** `src/__tests__/components/Rectangle.test.jsx`
   - **Tests:**
     - Render rectangle with correct dimensions
@@ -450,35 +450,35 @@ collabcanvas/
     - Mock Konva to avoid canvas issues in tests
   - **Why:** Core visual element, validates props are applied correctly
 
-- [ ] Create CanvasObjects component
+- [ ] 6.3 Create CanvasObjects component
   - **Files Created:** `src/components/Canvas/CanvasObjects.jsx`
   - **Content:** Map over objects array and render Rectangle components
 
-- [ ] Add rectangle creation to Canvas
+- [ ] 6.4 Add rectangle creation to Canvas
   - **Files Modified:** `src/components/Canvas/Canvas.jsx`
   - **Content:** Mouse down/move/up handlers for drag-to-create
 
-- [ ] Implement drag-to-create logic
+- [ ] 6.5 Implement drag-to-create logic
   - **Files Modified:** `src/hooks/useCanvas.js`
   - **Content:** Track drag start, calculate width/height during drag, create object on mouse up
 
-- [ ] Generate rectangle with user's cursor color
+- [ ] 6.6 Generate rectangle with user's cursor color
   - **Files Modified:** `src/hooks/useCanvas.js`
   - **Content:** Use current user's cursor color (from presence) for new rectangle
 
-- [ ] Add rectangle to local state
+- [ ] 6.7 Add rectangle to local state
   - **Files Modified:** `src/hooks/useCanvas.js`
   - **Content:** Add new rectangle to objects array
 
-- [ ] Create Firestore write functions
+- [ ] 6.8 Create Firestore write functions
   - **Files Modified:** `src/services/firestore.js`
   - **Content:** `createObject(canvasId, object)`, `updateObject(objectId, updates)`
 
-- [ ] Save rectangle to Firestore
+- [ ] 6.9 Save rectangle to Firestore
   - **Files Modified:** `src/hooks/useCanvas.js`
   - **Content:** After creating rectangle locally, save to Firestore
 
-- [ ] Test rectangle creation
+- [ ] 6.10 Test rectangle creation
   - Drag on canvas to create rectangles
   - Verify size matches drag distance
   - Verify color matches user's cursor color
@@ -501,42 +501,42 @@ collabcanvas/
 **Testing:** ✅ Integration test for rectangle sync
 
 #### Tasks:
-- [ ] Create realtime sync hook
+- [ ] 7.1 Create realtime sync hook
   - **Files Created:** `src/hooks/useRealtime.js`
   - **Content:** Listen to Firestore changes, sync local state with database
 
-- [ ] Setup Firestore listener for objects
+- [ ] 7.2 Setup Firestore listener for objects
   - **Files Modified:** `src/hooks/useRealtime.js`
   - **Content:** `onSnapshot` listener for canvas objects collection
 
-- [ ] Update local state on remote changes
+- [ ] 7.3 Update local state on remote changes
   - **Files Modified:** `src/hooks/useCanvas.js`
   - **Content:** When Firestore updates, merge changes into local state
 
-- [ ] Handle create events
+- [ ] 7.4 Handle create events
   - **Files Modified:** `src/hooks/useRealtime.js`
   - **Content:** When new object created remotely, add to local canvas
 
-- [ ] Handle update events
+- [ ] 7.5 Handle update events
   - **Files Modified:** `src/hooks/useRealtime.js`
   - **Content:** When object updated remotely, update local version
 
-- [ ] Prevent sync loops
+- [ ] 7.6 Prevent sync loops
   - **Files Modified:** `src/hooks/useCanvas.js`
   - **Content:** Don't sync back changes that came from Firestore
 
-- [ ] Implement "last write wins" conflict resolution
+- [ ] 7.7 Implement "last write wins" conflict resolution
   - **Files Modified:** `src/services/firestore.js`
   - **Content:** Use timestamps, later timestamp wins
 
-- [ ] Test rectangle sync
+- [ ] 7.8 Test rectangle sync
   - Open 2 browser windows
   - Create rectangle in window 1
   - Verify appears in window 2
   - Create rectangle in window 2
   - Verify appears in window 1
 
-- [ ] **🧪 INTEGRATION TEST: Rectangle sync**
+- [ ] 7.9 **🧪 INTEGRATION TEST: Rectangle sync**
   - **Files Created:** `src/__tests__/integration/rectangle-sync.test.js`
   - **Tests:**
     - Mock Firestore listeners
@@ -564,15 +564,15 @@ collabcanvas/
 **Testing:** ✅ Unit test for canvas state management
 
 #### Tasks:
-- [ ] Add selection to Rectangle component
+- [ ] 8.1 Add selection to Rectangle component
   - **Files Modified:** `src/components/Canvas/Rectangle.jsx`
   - **Content:** Click handler to select rectangle, visual indication when selected
 
-- [ ] Track selected object in state
+- [ ] 8.2 Track selected object in state
   - **Files Modified:** `src/hooks/useCanvas.js`
   - **Content:** Add `selectedObjectId` to state
 
-- [ ] **🧪 UNIT TEST: Canvas state management**
+- [ ] 8.3 **🧪 UNIT TEST: Canvas state management**
   - **Files Created:** `src/__tests__/hooks/useCanvas.test.js`
   - **Tests:**
     - Test object selection updates state
@@ -582,31 +582,31 @@ collabcanvas/
     - Mock Firestore to avoid real database calls
   - **Why:** Complex state logic, prone to bugs, critical for UX
 
-- [ ] Implement rectangle dragging
+- [ ] 8.4 Implement rectangle dragging
   - **Files Modified:** `src/components/Canvas/Rectangle.jsx`
   - **Content:** Konva drag handlers, update position on drag
 
-- [ ] Update local position during drag
+- [ ] 8.5 Update local position during drag
   - **Files Modified:** `src/hooks/useCanvas.js`
   - **Content:** Optimistically update local state while dragging
 
-- [ ] Debounce Firestore updates during drag
+- [ ] 8.6 Debounce Firestore updates during drag
   - **Files Modified:** `src/hooks/useCanvas.js`
   - **Content:** Only save to Firestore on drag end, not during drag
 
-- [ ] Save final position to Firestore
+- [ ] 8.7 Save final position to Firestore
   - **Files Modified:** `src/hooks/useCanvas.js`
   - **Content:** On drag end, save new position to database
 
-- [ ] Sync position updates to other users
+- [ ] 8.8 Sync position updates to other users
   - **Files Modified:** `src/hooks/useRealtime.js`
   - **Content:** Listen for position updates, update local rectangles
 
-- [ ] Handle deselection
+- [ ] 8.9 Handle deselection
   - **Files Modified:** `src/hooks/useCanvas.js`
   - **Content:** Click on empty canvas to deselect
 
-- [ ] Test movement sync
+- [ ] 8.10 Test movement sync
   - Open 2 browser windows
   - Move rectangle in window 1
   - Verify movement appears in window 2
@@ -630,11 +630,11 @@ collabcanvas/
 **Testing:** ✅ Unit test for Firestore service functions
 
 #### Tasks:
-- [ ] Setup canvas document in Firestore
+- [ ] 9.1 Setup canvas document in Firestore
   - **Files Modified:** `src/services/firestore.js`
   - **Content:** Create/get canvas document, structure: `{ id, objects: [], lastUpdated }`
 
-- [ ] **🧪 UNIT TEST: Firestore operations**
+- [ ] 9.2 **🧪 UNIT TEST: Firestore operations**
   - **Files Created:** `src/__tests__/services/firestore.test.js`
   - **Tests:**
     - Mock Firestore SDK
@@ -645,31 +645,31 @@ collabcanvas/
     - Test error handling for failed writes
   - **Why:** Database operations are critical, mocks prevent real DB calls in tests
 
-- [ ] Load canvas state on mount
+- [ ] 9.3 Load canvas state on mount
   - **Files Modified:** `src/hooks/useCanvas.js`
   - **Content:** Fetch canvas state from Firestore when app loads
 
-- [ ] Implement auto-save interval
+- [ ] 9.4 Implement auto-save interval
   - **Files Modified:** `src/hooks/useCanvas.js`
   - **Content:** `setInterval` to save canvas state every 3-5 seconds
 
-- [ ] Batch updates for auto-save
+- [ ] 9.5 Batch updates for auto-save
   - **Files Modified:** `src/services/firestore.js`
   - **Content:** Batch write all object changes to reduce Firestore calls
 
-- [ ] Save on unmount/tab close
+- [ ] 9.6 Save on unmount/tab close
   - **Files Modified:** `src/hooks/useCanvas.js`
   - **Content:** Save state on component unmount or `beforeunload` event
 
-- [ ] Handle page refresh
+- [ ] 9.7 Handle page refresh
   - **Files Modified:** `src/hooks/useCanvas.js`
   - **Content:** Load persisted state after refresh, no data loss
 
-- [ ] Add loading state
+- [ ] 9.8 Add loading state
   - **Files Modified:** `src/components/Canvas/Canvas.jsx`
   - **Content:** Show loading indicator while fetching canvas state
 
-- [ ] Test persistence
+- [ ] 9.9 Test persistence
   - Create rectangles
   - Refresh page
   - Verify rectangles still there
@@ -693,53 +693,53 @@ collabcanvas/
 **Testing:** Manual verification + run full test suite
 
 #### Tasks:
-- [ ] Add loading states
+- [ ] 10.1 Add loading states
   - **Files Modified:** `src/App.jsx`, `src/components/Canvas/Canvas.jsx`
   - **Content:** Spinners or skeletons while loading
 
-- [ ] Add error boundaries
+- [ ] 10.2 Add error boundaries
   - **Files Created:** `src/components/ErrorBoundary.jsx`
   - **Content:** Catch React errors, show friendly message
 
-- [ ] Improve error handling
+- [ ] 10.3 Improve error handling
   - **Files Modified:** All service files
   - **Content:** Try/catch blocks, user-friendly error messages
 
-- [ ] Add visual feedback
+- [ ] 10.4 Add visual feedback
   - **Files Modified:** `src/components/Canvas/Rectangle.jsx`
   - **Content:** Hover effects, selection outlines, cursor changes
 
-- [ ] Optimize performance
+- [ ] 10.5 Optimize performance
   - **Files Modified:** `src/hooks/useCanvas.js`, `src/hooks/useCursor.js`
   - **Content:** Memoization, throttling, debouncing where needed
 
-- [ ] Test with 5+ concurrent users
+- [ ] 10.6 Test with 5+ concurrent users
   - Open 5+ browser windows
   - Create and move rectangles simultaneously
   - Verify no degradation
 
-- [ ] Test on slow network
+- [ ] 10.7 Test on slow network
   - Use Chrome DevTools to throttle to 3G
   - Verify sync still works, just slower
 
-- [ ] Cross-browser testing
+- [ ] 10.8 Cross-browser testing
   - Test on Chrome, Firefox, Safari
   - Test on mobile if time allows
 
-- [ ] Accessibility improvements
+- [ ] 10.9 Accessibility improvements
   - **Files Modified:** Various components
   - **Content:** Add aria labels, keyboard navigation basics
 
-- [ ] Update README
+- [ ] 10.10 Update README
   - **Files Modified:** `README.md`
   - **Content:** Add screenshots, features list, known issues
 
-- [ ] Final deployment
+- [ ] 10.11 Final deployment
   - Deploy latest version
   - Test deployed URL with multiple users
   - Verify all features work in production
 
-- [ ] **🧪 RUN FULL TEST SUITE**
+- [ ] 10.12 **🧪 RUN FULL TEST SUITE**
   - **Command:** `npm test`
   - **Verify:**
     - All unit tests pass (utils, services, hooks, components)

@@ -163,3 +163,255 @@ p, div, span {
   background-color: #5a67d8;
 }
 
+/* ============================================
+   CANVAS CONTAINER STYLING
+   ============================================ */
+
+/* Global reset for canvas app */
+.App {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  position: relative;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+/* Canvas-specific root styles */
+.canvas-app {
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: left !important;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* Header bar styling */
+.canvas-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  user-select: none;
+}
+
+.canvas-header h1 {
+  margin: 0 !important;
+  font-size: 24px !important;
+  font-weight: 600 !important;
+  color: #1a202c !important;
+}
+
+.canvas-header .user-welcome {
+  font-size: 14px;
+  color: #718096 !important;
+  margin-left: 20px;
+}
+
+.canvas-header .header-controls {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.cursor-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: #f7fafc;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.cursor-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.cursor-label {
+  font-size: 12px;
+  color: #718096 !important;
+  font-weight: 500;
+}
+
+.header-sign-out {
+  padding: 8px 16px !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 6px !important;
+  background: #ffffff !important;
+  color: #4a5568 !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  transition: all 0.15s ease !important;
+}
+
+.header-sign-out:hover {
+  background: #f7fafc !important;
+  border-color: #cbd5e0 !important;
+  color: #2d3748 !important;
+}
+
+/* Canvas container styling */
+.canvas-container {
+  position: absolute;
+  top: 60px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  background: #f8f9fa;
+}
+
+/* Canvas stage (inner Konva container) */
+.canvas-stage {
+  cursor: grab;
+}
+
+.canvas-stage:active,
+.canvas-stage.dragging {
+  cursor: grabbing;
+}
+
+/* Konva stage styling */
+.konvajs-content {
+  background: #f8f9fa !important;
+  outline: none !important;
+  border: none !important;
+}
+
+.konvajs-content canvas {
+  outline: none !important;
+  border: none !important;
+  display: block;
+}
+
+/* Canvas interaction states */
+.canvas-stage.creating {
+  cursor: crosshair !important;
+}
+
+.canvas-stage.selecting {
+  cursor: pointer !important;
+}
+
+/* Remove scrollbars completely */
+.canvas-container::-webkit-scrollbar {
+  display: none;
+}
+
+.canvas-container {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Debug info styling */
+.canvas-debug {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.85);
+  color: #ffffff !important;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-family: 'Monaco', 'SF Mono', 'Cascadia Code', 'Roboto Mono', monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  pointer-events: none;
+  z-index: 100;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.canvas-debug div {
+  color: #ffffff !important;
+  margin: 2px 0;
+}
+
+/* Prevent text selection during canvas interactions */
+.canvas-stage * {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Smooth animations */
+.canvas-header,
+.cursor-indicator,
+.header-sign-out {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Focus styles for accessibility */
+.header-sign-out:focus {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+/* Loading state for canvas */
+.canvas-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: #f8f9fa;
+  color: #718096;
+  font-size: 14px;
+}
+
+.canvas-loading::before {
+  content: '';
+  width: 20px;
+  height: 20px;
+  margin-right: 12px;
+  border: 2px solid #e2e8f0;
+  border-top: 2px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .canvas-header {
+    padding: 0 15px;
+  }
+  
+  .canvas-header h1 {
+    font-size: 20px !important;
+  }
+  
+  .user-welcome {
+    display: none;
+  }
+  
+  .cursor-indicator {
+    display: none;
+  }
+}
+
+@media (max-height: 600px) {
+  .canvas-header {
+    height: 50px;
+  }
+  
+  .canvas-container {
+    top: 50px;
+  }
+}
+

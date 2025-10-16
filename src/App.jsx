@@ -8,10 +8,12 @@ import { app, auth, db } from './services/firebase'
 import { AuthProvider, useAuth } from './hooks/useAuth'
 import AuthForm from './components/Auth/AuthForm'
 
+// Import Canvas component
+import Canvas from './components/Canvas/Canvas'
+
 // Main App content (shown when authenticated)
 function MainApp() {
-  const { user, signOut, isAuthenticated } = useAuth()
-  const [count, setCount] = useState(0)
+  const { user, signOut } = useAuth()
 
   const handleSignOut = async () => {
     try {
@@ -23,36 +25,40 @@ function MainApp() {
   }
 
   return (
-    <>
-      <div>
-        <div className="user-info">
-          <h1>CollabCanvas MVP</h1>
-          <p>Welcome, {user?.displayName || user?.email}!</p>
-          <p>🔥 Firebase Status: Connected & Authenticated</p>
-          <div className="user-details">
-            <p>📧 Email: {user?.email}</p>
-            <p>🎨 Cursor Color: <span style={{ color: user?.cursorColor || '#999' }}>{user?.cursorColor || 'Not assigned yet'}</span></p>
-            <p>🆔 User ID: {user?.uid}</p>
+    <div className="canvas-app">
+      {/* Header with user info and controls */}
+      <div className="canvas-header">
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <h1>CollabCanvas</h1>
+          <div className="user-welcome">
+            Welcome, {user?.displayName || user?.email}!
           </div>
-          <button onClick={handleSignOut} className="auth-button secondary">
+        </div>
+        
+        <div className="header-controls">
+          {user?.cursorColor && (
+            <div className="cursor-indicator">
+              <div 
+                className="cursor-dot"
+                style={{ backgroundColor: user.cursorColor }}
+              />
+              <span className="cursor-label">Your cursor</span>
+            </div>
+          )}
+          <button 
+            onClick={handleSignOut}
+            className="header-sign-out"
+          >
             Sign Out
           </button>
         </div>
-        
-        <p>Real-time collaborative canvas - Coming Soon!</p>
       </div>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
+
+      {/* Canvas takes up the full viewport minus the header */}
+      <div className="canvas-container">
+        <Canvas />
       </div>
-      <p className="read-the-docs">
-        Getting started with CollabCanvas - Figma clone with multiplayer
-      </p>
-    </>
+    </div>
   )
 }
 
