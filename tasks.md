@@ -11,9 +11,9 @@
 
 ```
 collabcanvas/
-├── index.html                      # Vite entry point (ROOT LEVEL)
 ├── public/
-│   └── favicon.ico                 # Static assets only
+│   ├── index.html
+│   └── favicon.ico
 ├── src/
 │   ├── components/
 │   │   ├── Auth/
@@ -46,8 +46,6 @@ collabcanvas/
 │   ├── utils/
 │   │   ├── colors.js                   # Random color generator
 │   │   ├── canvasHelpers.js            # Canvas utility functions
-│   │   ├── testFirebaseEnv.js          # Firebase env testing
-│   │   ├── testFirebaseConnection.js   # Firebase connection testing
 │   │   └── constants.js                # App constants (canvas size, etc)
 │   ├── __tests__/                      # Test files
 │   │   ├── utils/
@@ -66,18 +64,17 @@ collabcanvas/
 │   │   └── integration/
 │   │       ├── cursor-sync.test.js
 │   │       └── rectangle-sync.test.js
-│   ├── setupTests.js                   # Vitest setup
+│   ├── setupTests.js                   # Jest/Vitest setup
 │   ├── App.jsx                         # Main app component
 │   ├── App.css                         # Global styles
-│   ├── index.jsx                       # React entry point (Vite uses .jsx)
+│   ├── index.js                        # React entry point
 │   └── index.css                       # Base styles
 ├── .env                                # Firebase config (gitignored)
 ├── .env.example                        # Example env variables
 ├── .gitignore
 ├── package.json
 ├── package-lock.json
-├── vite.config.js                      # Vite configuration
-├── vitest.config.js                    # Vitest test configuration
+├── jest.config.js                      # or vitest.config.js
 └── README.md
 ```
 
@@ -110,7 +107,7 @@ collabcanvas/
   - **Content:** Firebase initialization, config from environment variables
 
 - [x] Create basic app structure
-  - **Files Created:** `src/App.jsx`, `src/App.css`, `src/index.jsx`
+  - **Files Created:** `src/App.jsx`, `src/App.css`, `src/index.js`
   - **Content:** Simple "Hello World" component
 
 - [x] Setup environment variables
@@ -121,7 +118,7 @@ collabcanvas/
   - **Files:** `.gitignore`
   - **Content:** Add `/node_modules`, `.env`, build folders
 
-- [ ] Deploy to hosting platform
+- [x] Deploy to hosting platform
   - Choose: Vercel, Firebase Hosting, or AWS
   - Test public URL works
   - **Files:** May need `vercel.json` or `firebase.json`
@@ -131,9 +128,9 @@ collabcanvas/
   - **Content:** How to install, configure Firebase, run locally, run tests
 
 **PR Checklist:**
-- [x] App runs locally on `localhost:5173` (Vite default port)
+- [x] App runs locally on `localhost:3000`
 - [x] Firebase connection works (test with console.log)
-- [ ] Deployed URL is publicly accessible
+- [x] Deployed URL is publicly accessible
 - [x] README has clear setup instructions
 - [x] All secrets in .env (not committed)
 
@@ -145,11 +142,11 @@ collabcanvas/
 **Testing:** ✅ Unit tests for auth service functions
 
 #### Tasks:
-- [ ] Create auth service functions
+- [x] Create auth service functions
   - **Files Created:** `src/services/auth.js`
   - **Functions:** `signUp(email, password, displayName)`, `signIn(email, password)`, `signOut()`, `getCurrentUser()`
 
-- [ ] **🧪 UNIT TEST: Auth service functions**
+- [x] **🧪 UNIT TEST: Auth service functions**
   - **Files Created:** `src/__tests__/services/auth.test.js`
   - **Tests:**
     - Mock Firebase auth methods
@@ -160,59 +157,44 @@ collabcanvas/
     - Test error handling for invalid credentials
   - **Why:** Auth is critical and pure functions are easy to test
 
-- [ ] Create auth context/hook
+- [x] Create auth context/hook
   - **Files Created:** `src/hooks/useAuth.js`
   - **Content:** Custom hook for auth state, user object, loading state
 
-- [ ] Build Signup component
+- [x] Build Signup component
   - **Files Created:** `src/components/Auth/Signup.jsx`
   - **Content:** Email, password, optional display name inputs, error handling
   
-- [ ] Build Login component
+- [x] Build Login component
   - **Files Created:** `src/components/Auth/Login.jsx`
   - **Content:** Email, password inputs, error handling
 
-- [ ] Create auth form wrapper
+- [x] Create auth form wrapper
   - **Files Created:** `src/components/Auth/AuthForm.jsx`
   - **Content:** Switch between login/signup, styling
 
-- [ ] Update App.jsx with auth routing
+- [x] Update App.jsx with auth routing
   - **Files Modified:** `src/App.jsx`
   - **Content:** Show auth forms if not logged in, show canvas if logged in
 
-- [ ] Generate random cursor color on signup
-  - **Files Created:** `src/utils/colors.js`
-  - **Files Modified:** `src/services/auth.js`
-  - **Content:** Assign and store random color in user profile
-
-- [ ] **🧪 UNIT TEST: Color generation**
-  - **Files Created:** `src/__tests__/utils/colors.test.js`
-  - **Tests:**
-    - Test `generateRandomColor()` returns valid hex color
-    - Test colors are sufficiently distinct (no white/black)
-    - Test color format is correct (#RRGGBB)
-    - Test randomness (call 10 times, get different results)
-  - **Why:** Pure function, easy to test, critical for UX
-
-- [ ] Store user profile in Firestore
+- [x] Store user profile in Firestore
   - **Files Modified:** `src/services/firestore.js`
-  - **Content:** Create user document with `{ id, email, displayName, cursorColor, createdAt }`
+  - **Content:** Create user document with `{ id, email, displayName, createdAt }`
 
-- [ ] Test authentication flow
+- [x] Test authentication flow
   - Sign up new user
   - Log out
   - Log back in
   - Verify session persists on refresh
 
 **PR Checklist:**
-- [ ] Can create new account
-- [ ] Can log in with existing account
-- [ ] Can log out
-- [ ] Session persists on page refresh
-- [ ] User gets assigned a random cursor color
-- [ ] Display name stored (or auto-generated)
-- [ ] Error messages show for invalid inputs
-- [ ] ✅ All unit tests pass (`npm test`)
+- [x] Can create new account
+- [x] Can log in with existing account
+- [x] Can log out
+- [x] Session persists on page refresh
+- [x] Display name stored (or auto-generated)
+- [x] Error messages show for invalid inputs
+- [x] ✅ All unit tests pass (`npm test`)
 
 ---
 
@@ -290,12 +272,29 @@ collabcanvas/
 ### PR #4: Cursor Sync (First Real-Time Feature!)
 **Goal:** See other users' cursors moving in real-time  
 **Time Estimate:** 3-4 hours  
-**Testing:** ✅ Unit test for cursor hook + Integration test for sync
+**Testing:** ✅ Unit tests for cursor hook and color generation + Integration test for sync
 
 #### Tasks:
 - [ ] Setup Firestore presence system
   - **Files Modified:** `src/services/firestore.js`
   - **Content:** Functions to update/read user presence, heartbeat system
+
+- [ ] Create color generation utility
+  - **Files Created:** `src/utils/colors.js`
+  - **Content:** `generateRandomColor()` function for cursor colors
+
+- [ ] **🧪 UNIT TEST: Color generation**
+  - **Files Created:** `src/__tests__/utils/colors.test.js`
+  - **Tests:**
+    - Test `generateRandomColor()` returns valid hex color
+    - Test colors are sufficiently distinct (no white/black)
+    - Test color format is correct (#RRGGBB)
+    - Test randomness (call 10 times, get different results)
+  - **Why:** Pure function, easy to test, critical for UX
+
+- [ ] Assign cursor color when joining canvas
+  - **Files Modified:** `src/hooks/usePresence.js` or `src/services/firestore.js`
+  - **Content:** Generate and assign random color when user first joins canvas, store in presence document
 
 - [ ] Create cursor tracking hook
   - **Files Created:** `src/hooks/useCursor.js`
@@ -358,10 +357,10 @@ collabcanvas/
 - [ ] Cursor positions update smoothly (<50ms delay)
 - [ ] Name labels show on others' cursors only
 - [ ] Own cursor visible but no name label
-- [ ] Cursor colors are distinct per user
+- [ ] Cursor colors are distinct per user (assigned on canvas join)
 - [ ] Cursors update at ~60 FPS
 - [ ] No lag or jitter in cursor movement
-- [ ] ✅ Unit tests pass for cursor throttling
+- [ ] ✅ Unit tests pass for cursor throttling and color generation
 - [ ] ✅ Integration test passes for cursor sync
 
 ---
@@ -465,7 +464,7 @@ collabcanvas/
 
 - [ ] Generate rectangle with user's cursor color
   - **Files Modified:** `src/hooks/useCanvas.js`
-  - **Content:** Use current user's cursor color for new rectangle
+  - **Content:** Use current user's cursor color (from presence) for new rectangle
 
 - [ ] Add rectangle to local state
   - **Files Modified:** `src/hooks/useCanvas.js`
@@ -488,7 +487,7 @@ collabcanvas/
 **PR Checklist:**
 - [ ] Can create rectangles by dragging
 - [ ] Rectangle size matches drag distance
-- [ ] Rectangle color matches user's cursor color
+- [ ] Rectangle color matches user's cursor color (from presence)
 - [ ] Rectangles save to Firestore
 - [ ] Can create multiple rectangles
 - [ ] No errors in console
