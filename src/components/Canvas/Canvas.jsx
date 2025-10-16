@@ -22,6 +22,9 @@ const Canvas = () => {
     isDragging
   } = useCanvas();
 
+  // State for online users tooltip
+  const [showOnlineUsersTooltip, setShowOnlineUsersTooltip] = useState(false);
+
   // Get current authenticated user
   const { user } = useAuth();
 
@@ -161,7 +164,33 @@ const Canvas = () => {
           <div>Cursor: x:{Math.round(cursorPosition.x)}, y:{Math.round(cursorPosition.y)} {isTracking ? '(tracking)' : '(idle)'}</div>
           <div>State: {isDragging ? 'Dragging' : 'Idle'}</div>
           <div>Presence: {presenceConnected ? '✅' : '❌'} | Sync: {syncStatus}</div>
-          <div>Online Users: {onlineUsers.length} | Other Cursors: {otherCursors.length}</div>
+          <div>
+            Online Users: {onlineUsers.length} | 
+            <span 
+              className="hoverable-text"
+              onMouseEnter={() => setShowOnlineUsersTooltip(true)}
+              onMouseLeave={() => setShowOnlineUsersTooltip(false)}
+            >
+              Other Cursors: {otherCursors.length}
+              {showOnlineUsersTooltip && onlineUsers.length > 0 && (
+                <div className="online-users-tooltip">
+                  <div className="tooltip-header">Online Users:</div>
+                  {onlineUsers.map((onlineUser) => (
+                    <div key={onlineUser.id} className="tooltip-user">
+                      <span 
+                        className="user-color-dot" 
+                        style={{ backgroundColor: onlineUser.cursorColor }}
+                      ></span>
+                      <span className="user-name">
+                        {onlineUser.displayName || onlineUser.email || 'Anonymous'}
+                        {onlineUser.id === user?.uid && ' (You)'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </span>
+          </div>
           {userCursorColor && <div>My Color: <span style={{color: userCursorColor}}>●</span> {userCursorColor}</div>}
         </div>
       )}

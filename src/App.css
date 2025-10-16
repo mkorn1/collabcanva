@@ -343,6 +343,83 @@ p, div, span {
   margin: 2px 0;
 }
 
+/* Hoverable text in debug panel */
+.hoverable-text {
+  position: relative;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+  pointer-events: auto; /* Enable pointer events for this specific element */
+}
+
+.hoverable-text:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Online users tooltip */
+.online-users-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 8px;
+  background: rgba(0, 0, 0, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  min-width: 200px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  animation: tooltipFadeIn 0.2s ease-out;
+}
+
+.tooltip-header {
+  color: #ffffff !important;
+  font-weight: bold;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 4px;
+}
+
+.tooltip-user {
+  display: flex;
+  align-items: center;
+  margin: 4px 0;
+  color: #ffffff !important;
+}
+
+.user-color-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 8px;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.user-name {
+  color: #ffffff !important;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Prevent text selection during canvas interactions */
 .canvas-stage * {
   -webkit-user-select: none;
