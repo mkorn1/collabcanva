@@ -12,9 +12,16 @@ const Rectangle = memo(({
   onMove,
   onDeselect
 }) => {
+  // Handle mouse down to prevent stage drag
+  const handleMouseDown = (e) => {
+    e.evt.stopPropagation(); // Konva's proper event stopping
+    e.cancelBubble = true; // Keep for compatibility
+  };
+
   // Handle rectangle click for selection
   const handleClick = (e) => {
-    e.cancelBubble = true; // Stop event from bubbling to Stage
+    e.evt.stopPropagation(); // Use Konva's proper event stopping
+    e.cancelBubble = true; // Keep for compatibility
     
     if (onSelect) {
       onSelect(rectangle.id);
@@ -23,7 +30,8 @@ const Rectangle = memo(({
 
   // Handle drag start - prepare for movement
   const handleDragStart = (e) => {
-    e.cancelBubble = true; // Prevent Stage from handling this
+    e.evt.stopPropagation(); // Add proper event stopping
+    e.cancelBubble = true; // Keep for compatibility
     
     // Ensure rectangle is selected when starting to drag
     if (!isSelected && onSelect) {
@@ -43,7 +51,8 @@ const Rectangle = memo(({
 
   // Handle drag end - finalize position
   const handleDragEnd = (e) => {
-    e.cancelBubble = true;
+    e.evt.stopPropagation(); // Add proper event stopping
+    e.cancelBubble = true; // Keep for compatibility
     
     const newX = e.target.x();
     const newY = e.target.y();
@@ -85,6 +94,7 @@ const Rectangle = memo(({
       draggable={isSelected}
       
       // Event handlers
+      onMouseDown={handleMouseDown}
       onClick={handleClick}
       onTap={handleClick} // Mobile support
       onDragStart={handleDragStart}

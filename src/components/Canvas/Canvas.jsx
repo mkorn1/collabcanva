@@ -186,8 +186,8 @@ const Canvas = () => {
 
   // Handle stage clicks (empty canvas area only)
   const handleStageMouseDown = (e) => {
-    // Only handle clicks on the Stage itself (empty canvas)
-    if (e.target !== e.target.getStage()) {
+    // More robust check - ensure we're only handling Stage clicks
+    if (e.target !== e.target.getStage() || e.target.getClassName() !== 'Stage') {
       return;
     }
 

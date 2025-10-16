@@ -83,8 +83,8 @@ const Toolbox = ({
         ))}
       </div>
       
-      {/* Information section - only show in development */}
-      {debugInfo && process.env.NODE_ENV === 'development' && (
+      {/* Information section */}
+      {debugInfo && (
         <div className="toolbox-info">
           <div className="info-header" onClick={() => setIsInfoExpanded(!isInfoExpanded)}>
             <h4 className="info-title">Information</h4>
