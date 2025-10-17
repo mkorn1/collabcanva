@@ -32,8 +32,21 @@ const Toolbox = ({
       icon: '⬛',
       description: 'Create rectangles',
       shortcut: 'R'
+    },
+    {
+      id: 'circle',
+      name: 'Circle',
+      icon: '⭕',
+      description: 'Create circles',
+      shortcut: 'C'
+    },
+    {
+      id: 'text',
+      name: 'Text',
+      icon: '✏️',
+      description: 'Add text',
+      shortcut: 'T'
     }
-    // Future tools: circle, line, text, etc.
   ];
 
   const handleToolClick = (tool) => {
@@ -150,6 +163,10 @@ const Toolbox = ({
         <div className="creation-hint">
           {selectedTool === 'rectangle' ? (
             <span>Click and drag to create rectangle</span>
+          ) : selectedTool === 'circle' ? (
+            <span>Click and drag to create circle</span>
+          ) : selectedTool === 'text' ? (
+            <span>Click to add text</span>
           ) : selectedTool === 'select' ? (
             <span>Click objects to select</span>
           ) : (

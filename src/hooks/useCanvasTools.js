@@ -6,6 +6,8 @@ import { useState, useEffect, useCallback } from 'react';
  */
 export const useCanvasTools = ({
   isCreatingRectangle,
+  isCreatingCircle,
+  isCreatingText,
   cancelCreatingShape
 }) => {
   // State for toolbox and creation mode
@@ -19,6 +21,10 @@ export const useCanvasTools = ({
     // Set creation mode based on tool
     if (toolId === 'rectangle') {
       setCreationMode('rectangle');
+    } else if (toolId === 'circle') {
+      setCreationMode('circle');
+    } else if (toolId === 'text') {
+      setCreationMode('text');
     } else if (toolId === 'select') {
       setCreationMode(null);
     }
@@ -39,8 +45,14 @@ export const useCanvasTools = ({
         case 'r':
           handleToolSelect('rectangle');
           break;
+        case 'c':
+          handleToolSelect('circle');
+          break;
+        case 't':
+          handleToolSelect('text');
+          break;
         case 'escape':
-          if (isCreatingRectangle) {
+          if (isCreatingRectangle || isCreatingCircle || isCreatingText) {
             cancelCreatingShape();
           }
           handleToolSelect('select');
@@ -50,12 +62,14 @@ export const useCanvasTools = ({
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [isCreatingRectangle, cancelCreatingShape, handleToolSelect]);
+  }, [isCreatingRectangle, isCreatingCircle, isCreatingText, cancelCreatingShape, handleToolSelect]);
 
   // Update cursor based on creation mode
   const getCursorStyle = useCallback((isDragging) => {
-    if (creationMode === 'rectangle') {
+    if (creationMode === 'rectangle' || creationMode === 'circle') {
       return 'crosshair';
+    } else if (creationMode === 'text') {
+      return 'text';
     }
     return isDragging ? 'grabbing' : 'grab';
   }, [creationMode]);

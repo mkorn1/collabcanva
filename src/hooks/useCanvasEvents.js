@@ -16,6 +16,8 @@ export const useCanvasEvents = ({
   updateCreatingShape,
   finishCreatingShape,
   isCreatingRectangle,
+  isCreatingCircle,
+  isCreatingText,
   userCursorColor,
   user
 }) => {
@@ -103,6 +105,18 @@ export const useCanvasEvents = ({
         userColor: userCursorColor || '#667eea'
       });
       return; // Don't start dragging when creating
+    } else if (creationMode === 'circle' && pointerPos) {
+      // Start circle creation
+      startCreatingShape('circle', pointerPos, {
+        userColor: userCursorColor || '#667eea'
+      });
+      return; // Don't start dragging when creating
+    } else if (creationMode === 'text' && pointerPos) {
+      // Create text immediately (no drag creation)
+      startCreatingShape('text', pointerPos, {
+        userColor: '#000000' // Black text by default
+      });
+      return; // Don't start dragging when creating
     }
 
     // Handle normal canvas interactions (pan/drag)
@@ -111,18 +125,18 @@ export const useCanvasEvents = ({
 
   // Handle mouse move for creation
   const handleStageMouseMove = useCallback((e) => {
-    if (isCreatingRectangle) {
+    if (isCreatingRectangle || isCreatingCircle) {
       const stage = e.target.getStage();
       const pointerPos = stage.getPointerPosition();
       if (pointerPos) {
         updateCreatingShape(pointerPos);
       }
     }
-  }, [isCreatingRectangle, updateCreatingShape]);
+  }, [isCreatingRectangle, isCreatingCircle, updateCreatingShape]);
 
   // Handle mouse up for creation
   const handleStageMouseUp = useCallback((e) => {
-    if (isCreatingRectangle) {
+    if (isCreatingRectangle || isCreatingCircle) {
       finishCreatingShape({
         userColor: userCursorColor || '#667eea',
         userId: user?.uid
@@ -142,7 +156,7 @@ export const useCanvasEvents = ({
       y: stage.y()
     });
     stopDragging();
-  }, [isCreatingRectangle, finishCreatingShape, userCursorColor, user, updatePanPosition, stopDragging]);
+  }, [isCreatingRectangle, isCreatingCircle, finishCreatingShape, userCursorColor, user, updatePanPosition, stopDragging]);
 
   return {
     handleDragStart,

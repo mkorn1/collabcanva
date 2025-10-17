@@ -41,6 +41,14 @@ export const useCanvas = (canvasId = 'main', user = null) => {
   const [currentRectangle, setCurrentRectangle] = useState(null);
   const [isCreatingRectangle, setIsCreatingRectangle] = useState(false);
   
+  // Circle creation state
+  const [currentCircle, setCurrentCircle] = useState(null);
+  const [isCreatingCircle, setIsCreatingCircle] = useState(false);
+  
+  // Text creation state
+  const [currentText, setCurrentText] = useState(null);
+  const [isCreatingText, setIsCreatingText] = useState(false);
+  
   // Refs for performance and cleanup
   const stageRef = useRef(null);
   const dragStartRef = useRef(null);
@@ -359,35 +367,165 @@ export const useCanvas = (canvasId = 'main', user = null) => {
     return objectId;
   }, [isCreatingRectangle, currentRectangle, addObject, cancelRectangleCreation]);
 
+  // Circle creation functions
+  const startCircleCreation = useCallback((startPoint, userColor = '#667eea') => {
+    const canvasPoint = screenToCanvas(startPoint, stageRef.current);
+    
+    dragStartRef.current = canvasPoint;
+    setIsCreatingCircle(true);
+    setIsCreating(true);
+    
+    // Create initial circle preview
+    const initialCircle = {
+      id: `temp_circle_${Date.now()}`,
+      type: 'circle',
+      x: canvasPoint.x,
+      y: canvasPoint.y,
+      radius: 0,
+      fill: userColor,
+      stroke: userColor,
+      strokeWidth: 2,
+      opacity: 0.7, // Preview opacity
+      isPreview: true,
+      createdAt: null,
+      updatedAt: null
+    };
+    
+    setCurrentCircle(initialCircle);
+  }, []);
+
+  const updateCircleCreation = useCallback((currentPoint) => {
+    if (!isCreatingCircle || !dragStartRef.current || !currentCircle) {
+      return;
+    }
+    
+    const canvasPoint = screenToCanvas(currentPoint, stageRef.current);
+    const start = dragStartRef.current;
+    
+    // Calculate radius as distance from center to current point
+    const deltaX = canvasPoint.x - start.x;
+    const deltaY = canvasPoint.y - start.y;
+    const radius = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    
+    // Update preview circle
+    const updatedCircle = {
+      ...currentCircle,
+      radius: radius
+    };
+    
+    setCurrentCircle(updatedCircle);
+  }, [isCreatingCircle, currentCircle]);
+
+  const cancelCircleCreation = useCallback(() => {
+    setCurrentCircle(null);
+    setIsCreatingCircle(false);
+    setIsCreating(false);
+    dragStartRef.current = null;
+  }, []);
+
+  const finishCircleCreation = useCallback((userColor = '#667eea', userId = null) => {
+    if (!isCreatingCircle || !currentCircle || !dragStartRef.current) {
+      return null;
+    }
+    
+    const MIN_CIRCLE_RADIUS = 5;
+    
+    // Only create circle if it has meaningful size
+    if (currentCircle.radius < MIN_CIRCLE_RADIUS) {
+      cancelCircleCreation();
+      return null;
+    }
+    
+    // Create final circle object
+    const finalCircle = {
+      ...currentCircle,
+      id: `circle_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      opacity: 1.0, // Full opacity for final circle
+      isPreview: false,
+      createdBy: userId,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+    
+    // Add to objects array
+    const objectId = addObject(finalCircle);
+    
+    // Clean up creation state
+    setCurrentCircle(null);
+    setIsCreatingCircle(false);
+    setIsCreating(false);
+    dragStartRef.current = null;
+    
+    return objectId;
+  }, [isCreatingCircle, currentCircle, addObject, cancelCircleCreation]);
+
+  // Text creation functions
+  const startTextCreation = useCallback((startPoint, userColor = '#000000') => {
+    const canvasPoint = screenToCanvas(startPoint, stageRef.current);
+    
+    // Create initial text object
+    const initialText = {
+      id: `text_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      type: 'text',
+      x: canvasPoint.x,
+      y: canvasPoint.y,
+      text: 'Double-click to edit',
+      fontSize: 16,
+      fontFamily: 'Arial',
+      fill: userColor,
+      stroke: null,
+      strokeWidth: 0,
+      opacity: 1.0,
+      isPreview: false,
+      createdBy: null,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+    
+    // Add text object immediately (no drag creation for text)
+    const objectId = addObject(initialText);
+    
+    return objectId;
+  }, [addObject]);
+
   // Enhanced creation state management
   const startCreatingShape = useCallback((shapeType, startPoint, options = {}) => {
     if (shapeType === 'rectangle') {
       startRectangleCreation(startPoint, options.userColor);
+    } else if (shapeType === 'circle') {
+      startCircleCreation(startPoint, options.userColor);
+    } else if (shapeType === 'text') {
+      return startTextCreation(startPoint, options.userColor);
     }
-    // Future: Add other shapes like circle, line, etc.
-  }, [startRectangleCreation]);
+  }, [startRectangleCreation, startCircleCreation, startTextCreation]);
 
   const updateCreatingShape = useCallback((currentPoint) => {
     if (isCreatingRectangle) {
       updateRectangleCreation(currentPoint);
+    } else if (isCreatingCircle) {
+      updateCircleCreation(currentPoint);
     }
-    // Future: Handle other shapes
-  }, [isCreatingRectangle, updateRectangleCreation]);
+    // Text doesn't need updating during creation
+  }, [isCreatingRectangle, isCreatingCircle, updateRectangleCreation, updateCircleCreation]);
 
   const finishCreatingShape = useCallback((options = {}) => {
     if (isCreatingRectangle) {
       return finishRectangleCreation(options.userColor, options.userId);
+    } else if (isCreatingCircle) {
+      return finishCircleCreation(options.userColor, options.userId);
     }
-    // Future: Handle other shapes
+    // Text is created immediately, no finish needed
     return null;
-  }, [isCreatingRectangle, finishRectangleCreation]);
+  }, [isCreatingRectangle, isCreatingCircle, finishRectangleCreation, finishCircleCreation]);
 
   const cancelCreatingShape = useCallback(() => {
     if (isCreatingRectangle) {
       cancelRectangleCreation();
+    } else if (isCreatingCircle) {
+      cancelCircleCreation();
     }
-    // Future: Handle other shapes
-  }, [isCreatingRectangle, cancelRectangleCreation]);
+    // Text is created immediately, no cancel needed
+  }, [isCreatingRectangle, isCreatingCircle, cancelRectangleCreation, cancelCircleCreation]);
 
   return {
     // State
@@ -402,6 +540,14 @@ export const useCanvas = (canvasId = 'main', user = null) => {
     // Rectangle creation state
     currentRectangle,
     isCreatingRectangle,
+    
+    // Circle creation state
+    currentCircle,
+    isCreatingCircle,
+    
+    // Text creation state
+    currentText,
+    isCreatingText,
     
     // Sync state
     isLoading,

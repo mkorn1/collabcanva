@@ -211,7 +211,7 @@ describe('Rectangle Component', () => {
       const rect = screen.getByTestId('konva-rect');
       rect.click();
 
-      expect(mockOnSelect).toHaveBeenCalledWith('rect-123');
+      expect(mockOnSelect).toHaveBeenCalledWith('rect-123', false);
       expect(mockOnSelect).toHaveBeenCalledTimes(1);
     });
 
@@ -229,7 +229,7 @@ describe('Rectangle Component', () => {
       // Simulate tap via mousedown (our mock maps onTap to onMouseDown)
       rect.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
 
-      expect(mockOnSelect).toHaveBeenCalledWith('rect-123');
+      expect(mockOnSelect).toHaveBeenCalledWith('rect-123', false);
       expect(mockOnSelect).toHaveBeenCalledTimes(1);
     });
 

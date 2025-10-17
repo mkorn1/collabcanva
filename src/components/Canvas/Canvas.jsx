@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { Stage, Layer, Rect } from 'react-konva';
+import { Stage, Layer, Rect, Circle as KonvaCircle } from 'react-konva';
 import { 
   CANVAS_WIDTH, 
   CANVAS_HEIGHT
@@ -11,9 +11,13 @@ import { useRealtimeCursor } from '../../hooks/useRealtimeCursor.js';
 import { useCanvasEvents } from '../../hooks/useCanvasEvents.js';
 import { useCanvasTools } from '../../hooks/useCanvasTools.js';
 import { useCanvasViewport } from '../../hooks/useCanvasViewport.js';
+import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts.js';
 import CursorLayer from '../Collaboration/CursorLayer.jsx';
 import Toolbox from './Toolbox.jsx';
 import Rectangle from './Rectangle.jsx';
+import Circle from './Circle.jsx';
+import Text from './Text.jsx';
+import TextFormattingPanel from './TextFormattingPanel.jsx';
 
 const Canvas = () => {
   // Get current authenticated user FIRST
@@ -33,6 +37,10 @@ const Canvas = () => {
     selectedObjectIds,
     currentRectangle,
     isCreatingRectangle,
+    currentCircle,
+    isCreatingCircle,
+    currentText,
+    isCreatingText,
     isLoading,
     syncError,
     startCreatingShape,
@@ -42,6 +50,8 @@ const Canvas = () => {
     selectObject,
     deselectObject,
     updateObject,
+    removeObject,
+    addObject,
     getSelectedObjects,
     isObjectSelected
   } = useCanvas('main', user);
@@ -67,6 +77,8 @@ const Canvas = () => {
   const { stageSize, toolboxPosition } = useCanvasViewport();
   const { selectedTool, creationMode, handleToolSelect, getCursorStyle } = useCanvasTools({
     isCreatingRectangle,
+    isCreatingCircle,
+    isCreatingText,
     cancelCreatingShape
   });
   const {
@@ -88,8 +100,19 @@ const Canvas = () => {
     updateCreatingShape,
     finishCreatingShape,
     isCreatingRectangle,
+    isCreatingCircle,
+    isCreatingText,
     userCursorColor,
     user
+  });
+
+  // Initialize keyboard shortcuts
+  const keyboardShortcuts = useKeyboardShortcuts({
+    getSelectedObjects,
+    removeObject,
+    addObject,
+    updateObject,
+    isEnabled: true // Always enabled for now
   });
 
   // Initialize cursor tracking on the stage
@@ -105,17 +128,31 @@ const Canvas = () => {
     return objects.filter(obj => selectedObjectIds.includes(obj.id));
   }, [objects, selectedObjectIds]);
 
+  // Get the first selected text object for formatting panel
+  const selectedTextObject = useMemo(() => {
+    return selectedObjects.find(obj => obj.type === 'text');
+  }, [selectedObjects]);
+
   // Handle rectangle selection
   const handleRectangleSelect = useCallback((rectangleId, multiSelect = false) => {
     selectObject(rectangleId, multiSelect);
   }, [selectObject]);
 
-  // Handle rectangle movement
+  // Handle rectangle movement  
   const handleRectangleMove = useCallback(async (rectangleId, newPosition) => {
     try {
       await updateObject(rectangleId, newPosition);
     } catch (error) {
       console.error('Failed to move rectangle:', error);
+    }
+  }, [updateObject]);
+
+  // Handle text editing (content and formatting)
+  const handleTextEdit = useCallback(async (textId, updates) => {
+    try {
+      await updateObject(textId, updates);
+    } catch (error) {
+      console.error('Failed to update text:', error);
     }
   }, [updateObject]);
 
@@ -165,7 +202,7 @@ const Canvas = () => {
         y={panPosition.y}
         scaleX={zoom}
         scaleY={zoom}
-        draggable={!isCreatingRectangle}
+        draggable={!isCreatingRectangle && !isCreatingCircle && !isCreatingText}
         onDragStart={handleDragStart}
         onMouseDown={handleStageMouseDown}
         onMouseMove={handleStageMouseMove}
@@ -189,6 +226,31 @@ const Canvas = () => {
                   onMultiMove={handleMultiObjectMove}
                 />
               );
+            } else if (obj.type === 'circle') {
+              return (
+                <Circle
+                  key={obj.id}
+                  circle={obj}
+                  isSelected={isObjectSelected(obj.id)}
+                  onSelect={handleRectangleSelect} // Same selection logic
+                  onMove={handleRectangleMove} // Same move logic
+                  selectedObjects={selectedObjects}
+                  onMultiMove={handleMultiObjectMove}
+                />
+              );
+            } else if (obj.type === 'text') {
+              return (
+                <Text
+                  key={obj.id}
+                  text={obj}
+                  isSelected={isObjectSelected(obj.id)}
+                  onSelect={handleRectangleSelect} // Same selection logic
+                  onMove={handleRectangleMove} // Same move logic
+                  onEdit={handleTextEdit} // Text-specific editing
+                  selectedObjects={selectedObjects}
+                  onMultiMove={handleMultiObjectMove}
+                />
+              );
             }
             return null;
           })}
@@ -205,6 +267,21 @@ const Canvas = () => {
               stroke={currentRectangle.stroke}
               strokeWidth={currentRectangle.strokeWidth}
               opacity={currentRectangle.opacity}
+              dash={[5, 5]} // Dashed border for preview
+            />
+          )}
+          
+          {/* Render current circle being created (preview) */}
+          {currentCircle && (
+            <KonvaCircle
+              key={currentCircle.id}
+              x={currentCircle.x}
+              y={currentCircle.y}
+              radius={currentCircle.radius}
+              fill={currentCircle.fill}
+              stroke={currentCircle.stroke}
+              strokeWidth={currentCircle.strokeWidth}
+              opacity={currentCircle.opacity}
               dash={[5, 5]} // Dashed border for preview
             />
           )}
@@ -268,6 +345,15 @@ const Canvas = () => {
           currentUserId: user?.uid
         }}
       />
+
+      {/* Text formatting panel - shows when text is selected */}
+      {selectedTextObject && (
+        <TextFormattingPanel
+          textObject={selectedTextObject}
+          onChange={(updatedText) => handleTextEdit(selectedTextObject.id, updatedText)}
+          onClose={() => deselectObject()}
+        />
+      )}
     </div>
   );
 };

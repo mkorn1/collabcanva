@@ -486,269 +486,589 @@ collabcanvas/
 
 ---
 
-### PR #7: Rectangle Sync (Critical!)
-**Goal:** All users see rectangles created by anyone in real-time  
-**Time Estimate:** 2-3 hours  
-**Testing:** ✅ Integration test for rectangle sync
+# CollabCanvas - Rubric-Optimized Task List
 
-#### Tasks:
-- [ ] 7.1 Create realtime sync hook
-  - **Files Created:** `src/hooks/useRealtime.js`
-  - **Content:** Listen to Firestore changes, sync local state with database
-
-- [ ] 7.2 Setup Firestore listener for objects
-  - **Files Modified:** `src/hooks/useRealtime.js`
-  - **Content:** `onSnapshot` listener for canvas objects collection
-
-- [ ] 7.3 Update local state on remote changes
-  - **Files Modified:** `src/hooks/useCanvas.js`
-  - **Content:** When Firestore updates, merge changes into local state
-
-- [ ] 7.4 Handle create events
-  - **Files Modified:** `src/hooks/useRealtime.js`
-  - **Content:** When new object created remotely, add to local canvas
-
-- [ ] 7.5 Handle update events
-  - **Files Modified:** `src/hooks/useRealtime.js`
-  - **Content:** When object updated remotely, update local version
-
-- [ ] 7.6 Prevent sync loops
-  - **Files Modified:** `src/hooks/useCanvas.js`
-  - **Content:** Don't sync back changes that came from Firestore
-
-- [ ] 7.7 Implement "last write wins" conflict resolution
-  - **Files Modified:** `src/services/firestore.js`
-  - **Content:** Use timestamps, later timestamp wins
-
-- [ ] 7.8 Test rectangle sync
-  - Open 2 browser windows
-  - Create rectangle in window 1
-  - Verify appears in window 2
-  - Create rectangle in window 2
-  - Verify appears in window 1
-
-- [ ] 7.9 **🧪 INTEGRATION TEST: Rectangle sync**
-  - **Files Created:** `src/__tests__/integration/rectangle-sync.test.js`
-  - **Tests:**
-    - Mock Firestore listeners
-    - Simulate user 1 creating rectangle
-    - Verify rectangle appears in user 2's state
-    - Test simultaneous creation (no duplicates)
-    - Test "last write wins" conflict resolution
-    - Verify sync prevents infinite loops
-  - **Why:** Most critical feature, validates core collaboration logic
-
-**PR Checklist:**
-- [ ] Rectangles created by one user appear for all users
-- [ ] Sync happens in <100ms (feels instant)
-- [ ] No duplicate rectangles
-- [ ] No sync loops or infinite updates
-- [ ] Handles simultaneous creation gracefully
-- [ ] Tested with 2+ users
-- [ ] ✅ Integration test passes for rectangle sync
+**Current Status:** PRs 1-6 Complete (Auth, Canvas, Cursor Sync, Presence, Basic Rectangles)  
+**Strategy:** Hybrid approach - Quick wins first (secure points), then critical infrastructure, then remaining features  
+**Target Score:** 85-95/100 points
 
 ---
 
-### PR #8: Rectangle Movement & Selection
-**Goal:** Select and move rectangles, synced across users  
-**Time Estimate:** 2-3 hours  
-**Testing:** ✅ Unit test for canvas state management
+## Point Tracker by Section
 
-#### Tasks:
-- [ ] 8.1 Add selection to Rectangle component
-  - **Files Modified:** `src/components/Canvas/Rectangle.jsx`
-  - **Content:** Click handler to select rectangle, visual indication when selected
-
-- [ ] 8.2 Track selected object in state
-  - **Files Modified:** `src/hooks/useCanvas.js`
-  - **Content:** Add `selectedObjectId` to state
-
-- [ ] 8.3 **🧪 UNIT TEST: Canvas state management**
-  - **Files Created:** `src/__tests__/hooks/useCanvas.test.js`
-  - **Tests:**
-    - Test object selection updates state
-    - Test object movement updates position
-    - Test deselection clears selected object
-    - Test multiple objects tracked correctly
-    - Mock Firestore to avoid real database calls
-  - **Why:** Complex state logic, prone to bugs, critical for UX
-
-- [ ] 8.4 Implement rectangle dragging
-  - **Files Modified:** `src/components/Canvas/Rectangle.jsx`
-  - **Content:** Konva drag handlers, update position on drag
-
-- [ ] 8.5 Update local position during drag
-  - **Files Modified:** `src/hooks/useCanvas.js`
-  - **Content:** Optimistically update local state while dragging
-
-- [ ] 8.6 Debounce Firestore updates during drag
-  - **Files Modified:** `src/hooks/useCanvas.js`
-  - **Content:** Only save to Firestore on drag end, not during drag
-
-- [ ] 8.7 Save final position to Firestore
-  - **Files Modified:** `src/hooks/useCanvas.js`
-  - **Content:** On drag end, save new position to database
-
-- [ ] 8.8 Sync position updates to other users
-  - **Files Modified:** `src/hooks/useRealtime.js`
-  - **Content:** Listen for position updates, update local rectangles
-
-- [ ] 8.9 Handle deselection
-  - **Files Modified:** `src/hooks/useCanvas.js`
-  - **Content:** Click on empty canvas to deselect
-
-- [ ] 8.10 Test movement sync
-  - Open 2 browser windows
-  - Move rectangle in window 1
-  - Verify movement appears in window 2
-  - Test simultaneous movement (last write wins)
-
-**PR Checklist:**
-- [ ] Can select rectangles by clicking
-- [ ] Can move rectangles by dragging
-- [ ] Movement syncs to other users
-- [ ] No lag during dragging (optimistic updates)
-- [ ] Position saves correctly on drag end
-- [ ] Handles simultaneous moves gracefully
-- [ ] Can deselect by clicking empty space
-- [ ] ✅ Unit tests pass for canvas state management
+| Section | Max Points | Strategy | Target |
+|---------|-----------|----------|--------|
+| Core Collaborative Infrastructure | 30 | Must complete all | 27-30 |
+| Canvas Features & Performance | 20 | Complete all requirements | 18-20 |
+| Advanced Figma Features | 15 | Strategic selection (3+2+1) | 13-15 |
+| Technical Implementation | 10 | Already mostly done | 9-10 |
+| Documentation & Submission | 5 | Final polish | 5 |
+| **TOTAL** | **80** | - | **72-80** |
+| Bonus Points | +5 | If time allows | +2-3 |
 
 ---
 
-### PR #9: State Persistence & Auto-Save
-**Goal:** Canvas state persists and auto-saves every 3-5 seconds  
-**Time Estimate:** 1-2 hours  
-**Testing:** ✅ Unit test for Firestore service functions
+## Updated File Structure for Next Phase
+
+```
+collabcanvas/
+├── public/
+│   ├── index.html
+│   └── favicon.ico
+├── src/
+│   ├── components/
+│   │   ├── Auth/ (✅ COMPLETE)
+│   │   │   ├── Login.jsx
+│   │   │   ├── Signup.jsx
+│   │   │   └── AuthForm.jsx
+│   │   ├── Canvas/
+│   │   │   ├── Canvas.jsx              # ✅ Main canvas component
+│   │   │   ├── Rectangle.jsx           # ✅ Individual rectangle
+│   │   │   ├── Circle.jsx              # 🔄 PR #7 - NEW
+│   │   │   ├── Text.jsx                # 🔄 PR #7 - NEW
+│   │   │   ├── Toolbox.jsx             # ✅ Pan/zoom controls
+│   │   │   ├── ColorPicker.jsx         # 🔄 PR #8 - NEW
+│   │   │   ├── ObjectControls.jsx      # 🔄 PR #11 - NEW
+│   │   │   ├── LayersPanel.jsx         # 🔄 PR #11 - NEW
+│   │   │   ├── AlignmentTools.jsx      # 🔄 PR #13 - NEW
+│   │   │   └── VersionHistory.jsx      # 🔄 PR #14 - NEW
+│   │   ├── Collaboration/ (✅ COMPLETE)
+│   │   │   ├── Cursor.jsx              # ✅ Other users' cursors
+│   │   │   ├── CursorLayer.jsx         # ✅ Manages all cursors
+│   │   │   └── PresenceList.jsx        # ✅ Online users list
+│   │   └── Layout/
+│   │       ├── Header.jsx              # ✅ App header with user info
+│   │       ├── ConnectionStatus.jsx    # 🔄 PR #10 - NEW
+│   │       └── DarkModeToggle.jsx      # ✅ Existing
+│   ├── hooks/
+│   │   ├── useAuth.jsx                 # ✅ Authentication hook
+│   │   ├── useCanvas.js                # ✅ Canvas state management
+│   │   ├── useRealtime.js              # ✅ Firebase realtime sync (enhance PR #9)
+│   │   ├── usePresence.js              # ✅ User presence detection
+│   │   ├── useCursor.js                # ✅ Cursor position tracking
+│   │   ├── useKeyboardShortcuts.js     # 🔄 PR #7 - NEW
+│   │   └── useDarkMode.jsx             # ✅ Existing
+│   ├── services/
+│   │   ├── firebase.js                 # ✅ Firebase config & init
+│   │   ├── auth.js                     # ✅ Auth service functions
+│   │   ├── firestore.js                # ✅ Firestore operations (enhance PR #9)
+│   │   ├── realtime.js                 # ✅ Realtime database operations
+│   │   ├── offlineQueue.js             # 🔄 PR #10 - NEW
+│   │   └── versionHistory.js           # 🔄 PR #14 - NEW
+│   ├── utils/
+│   │   ├── colors.js                   # ✅ Random color generator
+│   │   ├── canvasHelpers.js            # ✅ Canvas utility functions
+│   │   ├── constants.js                # ✅ App constants
+│   │   ├── exportCanvas.js             # 🔄 PR #8 - NEW
+│   │   ├── performanceMonitor.js       # 🔄 PR #12 - NEW
+│   │   └── throttle.js                 # ✅ Existing
+│   ├── docs/                           # 🔄 NEW DIRECTORY
+│   │   ├── COLLAB_STRATEGIES.md        # 🔄 PR #9 - NEW
+│   │   └── ARCHITECTURE.md             # 🔄 PR #16 - NEW
+│   ├── __tests__/ (✅ MOSTLY COMPLETE)
+│   │   └── [existing test structure]
+│   ├── App.jsx                         # ✅ Main app component
+│   └── [other existing files]
+└── [config files]
+```
+
+**Legend:**
+- ✅ COMPLETE - Already implemented
+- 🔄 NEW/ENHANCE - To be added/enhanced in upcoming PRs
+
+---
+
+## ⚡ PHASE 1: Quick Wins & Foundation
+
+### PR #7: Additional Shapes & Basic Figma Features
+**Points Value:** Canvas Features (4pts) + Figma Tier 1 (4pts) = 8pts
 
 #### Tasks:
-- [ ] 9.1 Setup canvas document in Firestore
-  - **Files Modified:** `src/services/firestore.js`
-  - **Content:** Create/get canvas document, structure: `{ id, objects: [], lastUpdated }`
+- [x] 7.1 Add Circle shape component
+  - **Files Created:** `src/components/Canvas/Circle.jsx`
+  - **Content:** Konva Circle with same interaction patterns as Rectangle
 
-- [ ] 9.2 **🧪 UNIT TEST: Firestore operations**
-  - **Files Created:** `src/__tests__/services/firestore.test.js`
-  - **Tests:**
-    - Mock Firestore SDK
-    - Test `createObject()` writes correctly
-    - Test `updateObject()` updates fields
-    - Test `deleteObject()` removes object
-    - Test batch operations work correctly
-    - Test error handling for failed writes
-  - **Why:** Database operations are critical, mocks prevent real DB calls in tests
+- [x] 7.2 Add Text shape component with basic formatting
+  - **Files Created:** `src/components/Canvas/Text.jsx`
+  - **Content:** Konva Text with bold, italic, font size controls
 
-- [ ] 9.3 Load canvas state on mount
-  - **Files Modified:** `src/hooks/useCanvas.js`
-  - **Content:** Fetch canvas state from Firestore when app loads
+- [x] 7.3 Update Toolbox to include Circle and Text tools
+  - **Files Modified:** `src/components/Canvas/Toolbox.jsx`
+  - **Content:** Add Circle (C) and Text (T) tool buttons with keyboard shortcuts
 
-- [ ] 9.4 Implement auto-save interval
-  - **Files Modified:** `src/hooks/useCanvas.js`
-  - **Content:** `setInterval` to save canvas state every 3-5 seconds
+- [x] 7.4 **Tier 1 Feature: Keyboard shortcuts for common operations**
+  - **Files Created:** `src/hooks/useKeyboardShortcuts.js`
+  - **Content:** Delete (Del/Backspace), Duplicate (Cmd+D), Arrow keys to move selected, Copy (Cmd+C), Paste (Cmd+V)
+  - **Figma Points:** +2pts
 
-- [ ] 9.5 Batch updates for auto-save
-  - **Files Modified:** `src/services/firestore.js`
-  - **Content:** Batch write all object changes to reduce Firestore calls
+- [x] 7.5 **Tier 1 Feature: Copy/paste functionality**
+  - **Files Modified:** `src/hooks/useKeyboardShortcuts.js`
+  - **Content:** Cmd+C to copy, Cmd+V to paste (with offset), stores in clipboard state - IMPLEMENTED IN 7.4
+  - **Figma Points:** +2pts
 
-- [ ] 9.6 Save on unmount/tab close
-  - **Files Modified:** `src/hooks/useCanvas.js`
-  - **Content:** Save state on component unmount or `beforeunload` event
+**PR Checklist:**
+- [x] Can create circles and text shapes
+- [] Text has bold/italic/size controls
+- [ ] Delete key removes selected shapes
+- [ ] Cmd+D duplicates selected shape
+- [ ] Arrow keys move selected shape
+- [ ] Cmd+C/Cmd+V copies and pastes
+- [ ] All shortcuts work smoothly
 
-- [ ] 9.7 Handle page refresh
-  - **Files Modified:** `src/hooks/useCanvas.js`
-  - **Content:** Load persisted state after refresh, no data loss
+**Points Earned:** 8pts
 
-- [ ] 9.8 Add loading state
+---
+
+### PR #8: Color Picker & Export
+**Points Value:** Figma Tier 1 (4pts)
+
+#### Tasks:
+- [ ] 8.1 **Tier 1 Feature: Color picker with recent colors**
+  - **Files Created:** `src/components/Canvas/ColorPicker.jsx`
+  - **Content:** Color input, recent colors palette (stores last 8 colors in state)
+  - **Figma Points:** +2pts
+
+- [ ] 8.2 Integrate color picker into shape properties
   - **Files Modified:** `src/components/Canvas/Canvas.jsx`
-  - **Content:** Show loading indicator while fetching canvas state
+  - **Content:** Show color picker when shape selected, update fill color in Firestore
 
-- [ ] 9.9 Test persistence
-  - Create rectangles
-  - Refresh page
-  - Verify rectangles still there
-  - Close all tabs, reopen
-  - Verify data persists
+- [ ] 8.3 **Tier 1 Feature: Export canvas as PNG**
+  - **Files Created:** `src/utils/exportCanvas.js`
+  - **Content:** Use Konva's `toDataURL()`, trigger download with current view
+  - **Figma Points:** +2pts
+
+- [ ] 8.4 Add export button to UI
+  - **Files Modified:** `src/components/Layout/Header.jsx`
+  - **Content:** "Export PNG" button in header
 
 **PR Checklist:**
-- [ ] Canvas state auto-saves every 3-5 seconds
-- [ ] State persists through page refresh
-- [ ] State persists when all users disconnect
-- [ ] Loading state shows while fetching data
-- [ ] No data loss in any scenario
-- [ ] Firestore usage is efficient (batched writes)
-- [ ] ✅ Unit tests pass for Firestore operations
+- [ ] Color picker opens when shape selected
+- [ ] Can change shape fill color
+- [ ] Recent colors show in palette
+- [ ] Export PNG button downloads current canvas view
+- [ ] Exported PNG has correct dimensions
+
+**Points Earned:** 4pts
 
 ---
 
-### PR #10: Polish & Testing
-**Goal:** Fix bugs, improve UX, ensure production-ready  
-**Time Estimate:** 2-3 hours  
-**Testing:** Manual verification + run full test suite
+## 🔥 PHASE 2: Critical Infrastructure
+
+### PR #9: Conflict Resolution System
+**Points Value:** Conflict Resolution (8-9pts)
 
 #### Tasks:
-- [ ] 10.1 Add loading states
-  - **Files Modified:** `src/App.jsx`, `src/components/Canvas/Canvas.jsx`
-  - **Content:** Spinners or skeletons while loading
+- [ ] 9.1 Create collaboration strategy document
+  - **Files Created:** `docs/COLLAB_STRATEGIES.md`
+  - **Content:** Document last-write-wins strategy, timestamp logic, conflict scenarios
 
-- [ ] 10.2 Add error boundaries
-  - **Files Created:** `src/components/ErrorBoundary.jsx`
-  - **Content:** Catch React errors, show friendly message
+- [ ] 9.2 Add timestamp to all object operations
+  - **Files Modified:** `src/services/firestore.js`
+  - **Content:** Every create/update includes `lastModified: serverTimestamp()` and `lastModifiedBy: userId`
 
-- [ ] 10.3 Improve error handling
-  - **Files Modified:** All service files
-  - **Content:** Try/catch blocks, user-friendly error messages
+- [ ] 9.3 Implement last-write-wins logic
+  - **Files Modified:** `src/hooks/useRealtime.js`
+  - **Content:** Compare timestamps on incoming updates, only apply if newer
 
-- [ ] 10.4 Add visual feedback
-  - **Files Modified:** `src/components/Canvas/Rectangle.jsx`
-  - **Content:** Hover effects, selection outlines, cursor changes
+- [ ] 9.4 Add visual feedback for "who last edited"
+  - **Files Modified:** `src/components/Canvas/Rectangle.jsx`, `Circle.jsx`, `Text.jsx`
+  - **Content:** Show colored border with editor's name on hover (fades after 3 seconds)
 
-- [ ] 10.5 Optimize performance
-  - **Files Modified:** `src/hooks/useCanvas.js`, `src/hooks/useCursor.js`
-  - **Content:** Memoization, throttling, debouncing where needed
+- [ ] 9.5 Handle rapid edit storms (10+ changes/sec)
+  - **Files Modified:** `src/hooks/useCanvas.js`
+  - **Content:** Debounce Firestore writes (100ms), batch updates
 
-- [ ] 10.6 Test with 5+ concurrent users
-  - Open 5+ browser windows
-  - Create and move rectangles simultaneously
-  - Verify no degradation
-
-- [ ] 10.7 Test on slow network
-  - Use Chrome DevTools to throttle to 3G
-  - Verify sync still works, just slower
-
-- [ ] 10.8 Cross-browser testing
-  - Test on Chrome, Firefox, Safari
-  - Test on mobile if time allows
-
-- [ ] 10.9 Accessibility improvements
-  - **Files Modified:** Various components
-  - **Content:** Add aria labels, keyboard navigation basics
-
-- [ ] 10.10 Update README
-  - **Files Modified:** `README.md`
-  - **Content:** Add screenshots, features list, known issues
-
-- [ ] 10.11 Final deployment
-  - Deploy latest version
-  - Test deployed URL with multiple users
-  - Verify all features work in production
-
-- [ ] 10.12 **🧪 RUN FULL TEST SUITE**
-  - **Command:** `npm test`
-  - **Verify:**
-    - All unit tests pass (utils, services, hooks, components)
-    - All integration tests pass (cursor sync, rectangle sync)
-    - Test coverage is reasonable (>50% for critical paths)
-    - No skipped or failing tests
-  - **Why:** Final validation before submitting MVP
+- [ ] 9.6 Test conflict scenarios
+  - **Manual Testing:** See testing checklist below
 
 **PR Checklist:**
-- [ ] No console errors or warnings
-- [ ] Handles errors gracefully with user feedback
-- [ ] Loading states during async operations
-- [ ] 60 FPS maintained in all scenarios
-- [ ] Works with 5+ concurrent users
-- [ ] Cross-browser compatible
-- [ ] README is complete and accurate
-- [ ] Production deployment is stable
-- [ ] ✅ **ALL TESTS PASS** (unit + integration)
+- [ ] Two users edit same object → both see consistent final state
+- [ ] Visual indicator shows who last edited (colored border)
+- [ ] Rapid edits (10+ changes/sec) don't corrupt state
+- [ ] No "ghost" objects or duplicates
+- [ ] `COLLAB_STRATEGIES.md` clearly documents approach
+
+**Points Earned:** 8-9pts
+
+---
+
+### PR #10: Persistence & Reconnection System
+**Points Value:** Persistence & Reconnection (8-9pts)
+
+#### Tasks:
+- [ ] 10.1 Implement connection status indicator
+  - **Files Created:** `src/components/Layout/ConnectionStatus.jsx`
+  - **Content:** Green/yellow/red indicator, shows "Connected", "Reconnecting...", "Offline"
+
+- [ ] 10.2 Handle page refresh mid-operation
+  - **Files Modified:** `src/hooks/useCanvas.js`
+  - **Content:** Save pending operations to localStorage before unmount, restore on mount
+
+- [ ] 10.3 Implement offline operation queue
+  - **Files Created:** `src/services/offlineQueue.js`
+  - **Content:** Queue operations during disconnect, sync on reconnect
+
+- [ ] 10.4 Test persistence scenarios
+  - **Manual Testing:** See testing checklist below
+
+**PR Checklist:**
+- [ ] User refreshes mid-edit → returns to exact state
+- [ ] All users disconnect → canvas persists fully
+- [ ] Network drop (simulate offline) → auto-reconnects with complete state
+- [ ] Operations during disconnect queue and sync on reconnect
+- [ ] Connection status indicator shows current state
+
+**Points Earned:** 8-9pts
+
+---
+
+## 🎨 PHASE 3: Canvas Features & Performance
+
+### PR #11: Transform Operations & Layer Management
+**Points Value:** Canvas Features (4pts) + Figma Tier 2 (3pts) = 7pts
+
+#### Tasks:
+- [ ] 11.1 Add resize handles to shapes
+  - **Files Modified:** `src/components/Canvas/Rectangle.jsx`, `Circle.jsx`, `Text.jsx`
+  - **Content:** Konva Transformer component with resize handles on all corners
+
+- [ ] 11.2 Add rotation handle to shapes
+  - **Files Modified:** (same as above)
+  - **Content:** Rotation handle on Transformer, update rotation in Firestore
+
+- [ ] 11.3 **Tier 2 Feature: Z-index management (bring to front/send to back)**
+  - **Files Modified:** `src/hooks/useCanvas.js`
+  - **Content:** Add `zIndex` field to objects, functions to reorder
+  - **Figma Points:** +3pts
+
+- [ ] 11.4 Add z-index UI controls
+  - **Files Created:** `src/components/Canvas/ObjectControls.jsx`
+  - **Content:** Buttons for "Bring to Front", "Send to Back" when shape selected
+
+- [ ] 11.5 **Tier 2 Feature: Layers panel with drag-to-reorder**
+  - **Files Created:** `src/components/Canvas/LayersPanel.jsx`
+  - **Content:** Sidebar showing all objects, click to select, drag to reorder z-index
+  - **Figma Points:** +3pts
+
+**PR Checklist:**
+- [ ] Can resize shapes with corner handles
+- [ ] Can rotate shapes with rotation handle
+- [ ] "Bring to Front" and "Send to Back" buttons work
+- [ ] Layers panel shows all objects
+- [ ] Click object in layers panel selects it on canvas
+- [ ] Drag in layers panel reorders z-index
+
+**Points Earned:** 7pts
+
+---
+
+### PR #12: Performance Optimization for 1000+ Objects
+**Points Value:** Canvas Performance (4pts) + Scale Bonus (+1pt) = 5pts
+
+#### Tasks:
+- [ ] 12.1 Refactor to single Firestore document for all objects
+  - **Files Modified:** `src/services/firestore.js`, `src/hooks/useRealtime.js`
+  - **Content:** Store all objects in `canvas.objects` array instead of separate docs
+
+- [ ] 12.2 Implement React.memo on shape components
+  - **Files Modified:** `src/components/Canvas/Rectangle.jsx`, `Circle.jsx`, `Text.jsx`
+  - **Content:** Wrap exports in `React.memo()`, prevent unnecessary re-renders
+
+- [ ] 12.3 Add performance monitoring
+  - **Files Created:** `src/utils/performanceMonitor.js`
+  - **Content:** Track FPS, log warnings if drops below 60
+
+- [ ] 12.4 Test with 1000+ objects
+  - **Manual Testing:** Create 1000 rectangles, verify 60 FPS maintained
+
+**PR Checklist:**
+- [ ] Canvas loads with 1000+ objects in <2 seconds
+- [ ] Pan/zoom maintains 60 FPS with 1000+ objects
+- [ ] No lag when creating new shapes
+- [ ] Memory usage stays reasonable
+
+**Points Earned:** 5pts
+
+---
+
+## 🚀 PHASE 4: Remaining Figma Features
+
+### PR #13: Alignment Tools & Snap-to-Grid
+**Points Value:** Figma Tier 1 (2pts) + Tier 2 (3pts) = 5pts
+
+#### Tasks:
+- [ ] 13.1 **Tier 1 Feature: Snap-to-grid**
+  - **Files Modified:** `src/hooks/useCanvas.js`
+  - **Content:** Enable/disable snap-to-grid (10px grid), snap object position on drag
+  - **Figma Points:** +2pts
+
+- [ ] 13.2 Add snap-to-grid toggle button
+  - **Files Modified:** `src/components/Canvas/Toolbox.jsx`
+  - **Content:** Checkbox to enable/disable snap (keyboard shortcut Cmd+')
+
+- [ ] 13.3 **Tier 2 Feature: Alignment tools**
+  - **Files Created:** `src/components/Canvas/AlignmentTools.jsx`
+  - **Content:** Buttons for align left/center/right/top/middle/bottom
+  - **Figma Points:** +3pts
+
+- [ ] 13.4 Implement alignment logic
+  - **Files Modified:** `src/hooks/useCanvas.js`
+  - **Content:** Calculate bounds of selected objects, align to min/max/center
+
+**PR Checklist:**
+- [ ] Snap-to-grid toggle works
+- [ ] Objects snap to 10px grid when enabled
+- [ ] Alignment tools align selected objects correctly
+- [ ] All 6 alignment options work (left/center/right/top/middle/bottom)
+
+**Points Earned:** 5pts
+
+---
+
+### PR #14: Version History (Tier 3 Feature)
+**Points Value:** Figma Tier 3 (3pts)
+
+#### Tasks:
+- [ ] 14.1 **Tier 3 Feature: Version history with restore**
+  - **Files Created:** `src/services/versionHistory.js`
+  - **Content:** Save canvas snapshot every 5 minutes to Firestore `versions` collection
+  - **Figma Points:** +3pts
+
+- [ ] 14.2 Build version history UI
+  - **Files Created:** `src/components/Canvas/VersionHistory.jsx`
+  - **Content:** Modal showing list of versions (timestamp + thumbnail), click to restore
+
+- [ ] 14.3 Implement restore functionality
+  - **Files Modified:** `src/hooks/useCanvas.js`
+  - **Content:** Load selected version, replace current canvas state
+
+**PR Checklist:**
+- [ ] Canvas auto-saves version snapshots every 5 minutes
+- [ ] Version history modal shows list of past versions
+- [ ] Can restore to previous version
+- [ ] Restored version syncs to all users
+
+**Points Earned:** 3pts
+
+---
+
+## 🐛 PHASE 5: Bug Fixes & Polish
+
+### PR #15: Multi-Select Drag Fix & Real-Time Optimization
+**Points Value:** Real-Time Sync Performance (2-3pts)
+
+#### Tasks:
+- [ ] 15.1 Fix multi-select drag bug
+  - **Files Modified:** `src/components/Canvas/Canvas.jsx`, `src/hooks/useCanvas.js`
+  - **Content:** Ensure all selected objects move simultaneously, not just most recent
+  - **Issue:** First selected object moves on click release instead of immediately
+  - **Solution:** Batch update positions for all selected objects in single state update
+
+- [ ] 15.2 Optimize cursor sync to sub-50ms
+  - **Files Modified:** `src/hooks/useCursor.js`
+  - **Content:** Reduce throttle to 30ms (from 60ms), use WebSocket if available
+
+- [ ] 15.3 Optimize object sync to sub-100ms
+  - **Files Modified:** `src/hooks/useRealtime.js`
+  - **Content:** Use Firestore's real-time listeners with local cache, enable persistence
+
+**PR Checklist:**
+- [ ] Multi-select drag moves all objects simultaneously
+- [ ] Cursor sync measures <50ms delay (test with network tab)
+- [ ] Object sync measures <100ms delay
+- [ ] No visible lag during rapid edits
+
+**Points Earned:** 2-3pts
+
+---
+
+## 📄 PHASE 6: Documentation & Final Polish
+
+### PR #16: Documentation & Deployment
+**Points Value:** Documentation (5pts) + Technical Implementation (bonus 1-2pts) = 6-7pts
+
+#### Tasks:
+- [ ] 16.1 Update README with comprehensive setup guide
+  - **Files Modified:** `README.md`
+  - **Content:** 
+    - Clear setup instructions
+    - Architecture overview
+    - Feature list with screenshots
+    - Known issues section
+    - Deployment instructions
+
+- [ ] 16.2 Create architecture documentation
+  - **Files Created:** `docs/ARCHITECTURE.md`
+  - **Content:** 
+    - System design diagram
+    - Data flow explanation
+    - Technology stack rationale
+    - Performance optimization strategies
+
+- [ ] 16.3 Final deployment verification
+  - **Tasks:**
+    - Deploy to production
+    - Test with 5 concurrent users
+    - Verify all features work on deployed URL
+    - Record demo video if needed
+
+**PR Checklist:**
+- [ ] README is comprehensive and clear
+- [ ] Architecture is documented
+- [ ] Deployment is stable
+- [ ] Public URL supports 5+ concurrent users
+- [ ] All features work in production
+
+**Points Earned:** 5-7pts
+
+---
+
+## Manual Testing Checklist
+
+### Conflict Resolution Tests (9 points)
+Record screen for these scenarios:
+
+**Test 1: Simultaneous Move**
+- [ ] Open 2 browser windows (User A and User B)
+- [ ] Both users select the same rectangle
+- [ ] Both users drag it simultaneously to different positions
+- [ ] **Expected:** Both see final position (last write wins), no duplicate rectangles
+- [ ] **Verify:** Colored border shows who last edited
+
+**Test 2: Rapid Edit Storm**
+- [ ] User A rapidly resizes object (10+ times in 5 seconds)
+- [ ] User B simultaneously changes its color rapidly
+- [ ] User C simultaneously moves it rapidly
+- [ ] **Expected:** All changes eventually converge to consistent state, no corruption
+
+**Test 3: Delete vs Edit**
+- [ ] User A starts editing an object (dragging)
+- [ ] User B deletes the same object mid-drag
+- [ ] **Expected:** Object disappears for both users, no ghost objects
+
+**Test 4: Create Collision**
+- [ ] User A and User B both create rectangles at nearly the same time
+- [ ] **Expected:** Both rectangles appear, no duplicates, each has unique ID
+
+---
+
+### Persistence & Reconnection Tests (9 points)
+
+**Test 5: Mid-Operation Refresh**
+- [ ] User drags object halfway across canvas
+- [ ] Press F5 (refresh) mid-drag
+- [ ] **Expected:** Object position preserved at last saved state
+
+**Test 6: Total Disconnect**
+- [ ] Multiple users collaborate on canvas
+- [ ] All users close browsers
+- [ ] Wait 2 minutes
+- [ ] All users reopen canvas
+- [ ] **Expected:** Full canvas state intact, all objects present
+
+**Test 7: Network Simulation**
+- [ ] Open Chrome DevTools → Network tab → Set throttling to "Offline"
+- [ ] Make 5 rapid edits while offline
+- [ ] Restore network connection
+- [ ] **Expected:** Canvas syncs without data loss, queued operations apply
+
+**Test 8: Rapid Disconnect**
+- [ ] User makes 5 rapid edits
+- [ ] Immediately closes tab (don't wait)
+- [ ] **Expected:** Other users see all 5 edits persist
+
+---
+
+### Real-Time Sync Tests (12 points)
+
+**Test 9: Cursor Sync Speed**
+- [ ] Open 2 browser windows
+- [ ] Move cursor rapidly in User A window
+- [ ] Observe User B window
+- [ ] **Expected:** Cursor updates in <50ms (smooth, no jitter)
+
+**Test 10: Object Sync Speed**
+- [ ] User A creates rectangle
+- [ ] Start timer
+- [ ] **Expected:** Appears in User B window in <100ms
+
+**Test 11: Rapid Multi-User Edits**
+- [ ] 3+ users edit different objects simultaneously
+- [ ] All users make rapid changes for 30 seconds
+- [ ] **Expected:** Zero visible lag, all changes sync correctly
+
+---
+
+### Canvas Performance Tests (8 points)
+
+**Test 12: 1000+ Objects at 60 FPS**
+- [ ] Create 1000 rectangles on canvas (use script if needed)
+- [ ] Open browser DevTools → Performance tab
+- [ ] Pan and zoom canvas for 30 seconds
+- [ ] **Expected:** FPS stays at 60, no dropped frames
+
+**Test 13: Multi-Select & Transform**
+- [ ] Create 10 objects
+- [ ] Shift-click to select all 10
+- [ ] Drag, resize, and rotate the selection
+- [ ] **Expected:** All 10 objects transform simultaneously, smoothly
+
+---
+
+### Advanced Features Tests (15 points)
+
+**Test 14: Keyboard Shortcuts**
+- [ ] Create object, press Delete → object deletes
+- [ ] Select object, press Cmd+D → duplicates
+- [ ] Select object, press arrow keys → moves by 10px
+- [ ] Select object, press Cmd+C then Cmd+V → copies and pastes
+
+**Test 15: Color Picker & Export**
+- [ ] Select object, open color picker, change color → color updates
+- [ ] Change 3 different colors → recent colors palette shows last 3
+- [ ] Click "Export PNG" → downloads current canvas view
+
+**Test 16: Alignment & Snap**
+- [ ] Enable snap-to-grid → objects snap to 10px grid
+- [ ] Select 3 objects, click "Align Left" → all align to leftmost
+- [ ] Select 3 objects, click "Distribute Evenly" → equal spacing
+
+**Test 17: Layers & Z-Index**
+- [ ] Create 3 overlapping rectangles
+- [ ] Select bottom rectangle, click "Bring to Front" → moves to top
+- [ ] Open layers panel → shows all 3 objects
+- [ ] Click object in layers panel → selects on canvas
+
+**Test 18: Version History**
+- [ ] Create 5 objects, wait 5 minutes
+- [ ] Delete all objects
+- [ ] Open version history → shows previous version
+- [ ] Click "Restore" → all 5 objects return
+
+---
+
+## Final Deliverables Checklist
+
+- [ ] All PRs merged and tested
+- [ ] Deployed to public URL
+- [ ] `COLLAB_STRATEGIES.md` documents conflict resolution
+- [ ] `ARCHITECTURE.md` documents system design
+- [ ] README has screenshots and setup guide
+- [ ] Manual testing checklist completed (18 tests)
+- [ ] Screen recordings of critical tests (conflict resolution, persistence)
+- [ ] Performance verified (1000+ objects, 60 FPS)
+- [ ] 5+ concurrent users tested on deployed URL
+
+---
+
+## Next Steps
+
+1. **Start with PR #7** (Shapes & Quick Wins)
+2. **Test manually after each merge** - catch bugs early
+3. **Record screen for Tests 1-8** - proof for rubric grading
+4. **Deploy continuously** - don't leave deployment for last
+
+**Let's ship it! 🚀**
 
 ---
 

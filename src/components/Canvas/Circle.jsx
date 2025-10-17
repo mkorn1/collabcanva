@@ -1,12 +1,12 @@
 import React, { memo, useRef } from 'react';
-import { Rect } from 'react-konva';
+import { Circle as KonvaCircle } from 'react-konva';
 
 /**
- * Rectangle component with selection and movement capabilities
+ * Circle component with selection and movement capabilities
  * Handles its own events to prevent bubbling to Stage
  */
-const Rectangle = memo(({
-  rectangle,
+const Circle = memo(({
+  circle,
   isSelected = false,
   onSelect,
   onMove,
@@ -27,7 +27,7 @@ const Rectangle = memo(({
     e.cancelBubble = true; // Keep for compatibility
   };
 
-  // Handle rectangle click for selection
+  // Handle circle click for selection
   const handleClick = (e) => {
     // Handle both Konva events (e.evt) and DOM events (e)
     const event = e.evt || e;
@@ -39,7 +39,7 @@ const Rectangle = memo(({
     if (onSelect) {
       // Check if Ctrl/Cmd key is pressed for multi-select
       const isMultiSelect = event && (event.ctrlKey || event.metaKey);
-      onSelect(rectangle.id, isMultiSelect);
+      onSelect(circle.id, isMultiSelect);
     }
   };
 
@@ -58,9 +58,9 @@ const Rectangle = memo(({
       y: e.target.y()
     };
     
-    // Ensure rectangle is selected when starting to drag
+    // Ensure circle is selected when starting to drag
     if (!isSelected && onSelect) {
-      onSelect(rectangle.id, false); // Single select when starting drag
+      onSelect(circle.id, false); // Single select when starting drag
     }
   };
 
@@ -108,9 +108,9 @@ const Rectangle = memo(({
     } else {
       // Single object movement
       // Only update if position actually changed
-      if (newX !== rectangle.x || newY !== rectangle.y) {
+      if (newX !== circle.x || newY !== circle.y) {
         if (onMove) {
-          onMove(rectangle.id, { x: newX, y: newY });
+          onMove(circle.id, { x: newX, y: newY });
         }
       }
     }
@@ -133,16 +133,15 @@ const Rectangle = memo(({
   };
 
   return (
-    <Rect
-      // Rectangle properties
-      x={rectangle.x}
-      y={rectangle.y}
-      width={rectangle.width}
-      height={rectangle.height}
-      fill={rectangle.fill}
-      stroke={isSelected ? '#0066ff' : rectangle.stroke}
-      strokeWidth={isSelected ? 3 : rectangle.strokeWidth || 2}
-      opacity={rectangle.opacity || 1}
+    <KonvaCircle
+      // Circle properties
+      x={circle.x}
+      y={circle.y}
+      radius={circle.radius}
+      fill={circle.fill}
+      stroke={isSelected ? '#0066ff' : circle.stroke}
+      strokeWidth={isSelected ? 3 : circle.strokeWidth || 2}
+      opacity={circle.opacity || 1}
       
       // Interaction properties
       draggable={isSelected}
@@ -158,17 +157,17 @@ const Rectangle = memo(({
       onMouseLeave={handleMouseLeave}
       
       // Accessibility
-      name={`rectangle-${rectangle.id}`}
+      name={`circle-${circle.id}`}
     />
   );
 }, (prevProps, nextProps) => {
   // Optimize re-renders - only update if relevant props changed
   return (
-    prevProps.rectangle.updatedAt === nextProps.rectangle.updatedAt &&
+    prevProps.circle.updatedAt === nextProps.circle.updatedAt &&
     prevProps.isSelected === nextProps.isSelected
   );
 });
 
-Rectangle.displayName = 'Rectangle';
+Circle.displayName = 'Circle';
 
-export default Rectangle;
+export default Circle;
