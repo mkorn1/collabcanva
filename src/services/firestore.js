@@ -370,7 +370,7 @@ export async function setupDisconnectCleanup(userId) {
 /**
  * Creates a new canvas object
  * @param {string} canvasId - The canvas ID
- * @param {Object} objectData - Object data (type, position, size, color, etc.)
+ * @param {Object} objectData - Object data (type, position, size, color, rotation, scaleX, scaleY, etc.)
  * @returns {Promise<string>} The created object's ID
  */
 export async function createObject(canvasId, objectData) {
@@ -378,16 +378,31 @@ export async function createObject(canvasId, objectData) {
     const objectsRef = collection(db, CANVAS_COLLECTION, canvasId, OBJECTS_COLLECTION);
     const objectDoc = doc(objectsRef);
     
+    // Get current user info from auth
+    const currentUser = auth.currentUser;
+    const userId = currentUser?.uid || null;
+    const userName = currentUser?.displayName || currentUser?.email || 'Anonymous';
+    
     const objectWithMeta = {
       ...objectData,
       id: objectDoc.id,
       canvasId,
+      // Transform properties
+      rotation: objectData.rotation || 0,
+      scaleX: objectData.scaleX || 1,
+      scaleY: objectData.scaleY || 1,
+      // Creation timestamps
       createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
+      updatedAt: serverTimestamp(),
+      // Conflict resolution metadata
+      lastModified: serverTimestamp(),
+      lastModifiedBy: userId,
+      lastModifiedByName: userName,
+      version: 1 // Optional: version counter for additional safety
     };
     
     await setDoc(objectDoc, objectWithMeta);
-    console.log('✅ Object created:', objectDoc.id);
+    console.log('✅ Object created with conflict resolution metadata:', objectDoc.id);
     
     return objectDoc.id;
   } catch (error) {
@@ -397,23 +412,50 @@ export async function createObject(canvasId, objectData) {
 }
 
 /**
- * Updates an existing canvas object
+ * Updates an existing canvas object with conflict resolution metadata
  * @param {string} canvasId - The canvas ID
- * @param {string} objectId - The object ID
- * @param {Object} updates - Fields to update
+ * @param {string} objectId - The object ID to update
+ * @param {Object} updates - Updates to apply (position, size, color, rotation, scaleX, scaleY, etc.)
+ * @param {Object} options - Additional options
  * @returns {Promise<void>}
  */
-export async function updateObject(canvasId, objectId, updates) {
+export async function updateObject(canvasId, objectId, updates, options = {}) {
   try {
     const objectRef = doc(db, CANVAS_COLLECTION, canvasId, OBJECTS_COLLECTION, objectId);
     
+    // Get current user info from auth
+    const currentUser = auth.currentUser;
+    const userId = currentUser?.uid || null;
+    const userName = currentUser?.displayName || currentUser?.email || 'Anonymous';
+    
     const updateData = {
       ...updates,
-      updatedAt: serverTimestamp()
+      // Standard update timestamp
+      updatedAt: serverTimestamp(),
+      // Conflict resolution metadata
+      lastModified: serverTimestamp(),
+      lastModifiedBy: userId,
+      lastModifiedByName: userName
     };
     
+    // Add transform-specific metadata if transform properties are being updated
+    const isTransformUpdate = updates.rotation !== undefined || 
+                             updates.scaleX !== undefined || 
+                             updates.scaleY !== undefined;
+    
+    if (isTransformUpdate) {
+      updateData.lastTransformBy = userId;
+      updateData.lastTransformByName = userName;
+      updateData.lastTransformAt = serverTimestamp();
+    }
+    
+    // Optionally increment version counter
+    if (options.incrementVersion) {
+      updateData.version = (updates.version || 0) + 1;
+    }
+    
     await updateDoc(objectRef, updateData);
-    console.log('✅ Object updated:', objectId);
+    console.log('✅ Object updated with conflict resolution metadata:', objectId, 'by:', userName);
   } catch (error) {
     console.error('❌ Error updating object:', error);
     throw error;

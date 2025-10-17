@@ -19,6 +19,7 @@ import Circle from './Circle.jsx';
 import Text from './Text.jsx';
 import TextFormattingPanel from './TextFormattingPanel.jsx';
 import ColorPicker from './ColorPicker.jsx';
+import DeletionWarning from './DeletionWarning.jsx';
 
 const Canvas = () => {
   // Get current authenticated user FIRST
@@ -75,7 +76,7 @@ const Canvas = () => {
   } = useRealtimeCursor(user, true);
 
   // Use custom hooks for canvas management
-  const { stageSize, toolboxPosition } = useCanvasViewport();
+  const { stageSize } = useCanvasViewport();
   const { selectedTool, creationMode, handleToolSelect, getCursorStyle } = useCanvasTools({
     isCreatingRectangle,
     isCreatingCircle,
@@ -153,6 +154,33 @@ const Canvas = () => {
       await updateObject(rectangleId, newPosition);
     } catch (error) {
       console.error('Failed to move rectangle:', error);
+    }
+  }, [updateObject]);
+
+  // Handle rectangle transform (resize/rotate)
+  const handleRectangleTransform = useCallback(async (rectangleId, transformData) => {
+    try {
+      await updateObject(rectangleId, transformData);
+    } catch (error) {
+      console.error('Failed to transform rectangle:', error);
+    }
+  }, [updateObject]);
+
+  // Handle circle transform (resize/rotate)
+  const handleCircleTransform = useCallback(async (circleId, transformData) => {
+    try {
+      await updateObject(circleId, transformData);
+    } catch (error) {
+      console.error('Failed to transform circle:', error);
+    }
+  }, [updateObject]);
+
+  // Handle text transform (resize/rotate)
+  const handleTextTransform = useCallback(async (textId, transformData) => {
+    try {
+      await updateObject(textId, transformData);
+    } catch (error) {
+      console.error('Failed to transform text:', error);
     }
   }, [updateObject]);
 
@@ -263,6 +291,7 @@ const Canvas = () => {
                   isSelected={isObjectSelected(obj.id)}
                   onSelect={handleRectangleSelect}
                   onMove={handleRectangleMove}
+                  onTransform={handleRectangleTransform}
                   selectedObjects={selectedObjects}
                   onMultiMove={handleMultiObjectMove}
                 />
@@ -275,6 +304,7 @@ const Canvas = () => {
                   isSelected={isObjectSelected(obj.id)}
                   onSelect={handleRectangleSelect} // Same selection logic
                   onMove={handleRectangleMove} // Same move logic
+                  onTransform={handleCircleTransform}
                   selectedObjects={selectedObjects}
                   onMultiMove={handleMultiObjectMove}
                 />
@@ -288,6 +318,7 @@ const Canvas = () => {
                   onSelect={handleRectangleSelect} // Same selection logic
                   onMove={handleRectangleMove} // Same move logic
                   onEdit={handleTextEdit} // Text-specific editing
+                  onTransform={handleTextTransform}
                   selectedObjects={selectedObjects}
                   onMultiMove={handleMultiObjectMove}
                 />
@@ -367,12 +398,11 @@ const Canvas = () => {
         </div>
       )}
 
-      {/* Floating toolbox for shape creation */}
+      {/* Fixed sidebar toolbox for shape creation */}
       <Toolbox
         selectedTool={selectedTool}
         onToolSelect={handleToolSelect}
         isVisible={true}
-        position={toolboxPosition}
         selectedObjectsCount={selectedObjects.length}
         onColorPickerOpen={selectedObjects.length === 1 ? handleOpenColorPicker : null}
         onExportCanvas={handleExportCanvas}
@@ -407,6 +437,43 @@ const Canvas = () => {
           onClose={() => setShowColorPicker(false)}
           isVisible={showColorPicker}
         />
+      )}
+
+      {/* TEMPORARY TEST BUTTON FOR TOOLTIPS */}
+      {process.env.NODE_ENV === 'development' && (
+        <button 
+          onClick={() => {
+            // Force visual feedback on the first object
+            if (objects.length > 0) {
+              const firstObject = objects[0];
+              updateObject(firstObject.id, {
+                lastModifiedByName: user?.displayName || user?.email || 'Test User',
+                lastModified: Date.now(),
+                _conflictResolved: true,
+                _lastEditorColor: '#ff6b6b'
+              });
+              console.log('🧪 Test tooltip applied to:', firstObject.id, firstObject);
+            } else {
+              console.log('🧪 No objects to test tooltip on. Create a shape first!');
+            }
+          }}
+          style={{
+            position: 'absolute',
+            top: '10px',
+            right: '10px',
+            padding: '8px 12px',
+            backgroundColor: '#28a745',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            zIndex: 1000,
+            fontSize: '12px',
+            fontWeight: 'bold'
+          }}
+        >
+          🧪 Test Tooltip
+        </button>
       )}
     </div>
   );

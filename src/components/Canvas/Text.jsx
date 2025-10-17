@@ -1,5 +1,5 @@
 import React, { memo, useRef, useState, useEffect } from 'react';
-import { Text as KonvaText, Transformer } from 'react-konva';
+import { Text as KonvaText, Transformer, Group, Rect } from 'react-konva';
 
 /**
  * Text component with selection, movement, editing, and formatting capabilities
@@ -11,6 +11,7 @@ const Text = memo(({
   onSelect,
   onMove,
   onEdit,
+  onTransform, // Function to handle transform operations
   selectedObjects = [], // Array of all selected objects for coordinated dragging
   onMultiMove // Function to handle multi-object movement
 }) => {
@@ -19,6 +20,10 @@ const Text = memo(({
   const textRef = useRef(null);
   const transformerRef = useRef(null);
   const [isEditing, setIsEditing] = useState(false);
+  
+  // Visual feedback state for conflict resolution
+  const [showLastEditor, setShowLastEditor] = useState(false);
+  const [lastEditorInfo, setLastEditorInfo] = useState(null);
 
   // Set up transformer when selected
   useEffect(() => {
@@ -238,12 +243,23 @@ const Text = memo(({
     const node = textRef.current;
     const scaleX = node.scaleX();
     const scaleY = node.scaleY();
+    const rotation = node.rotation();
 
     // Reset scale and update width/fontSize
     node.scaleX(1);
     node.scaleY(1);
     
-    if (onEdit) {
+    if (onTransform) {
+      // Use onTransform for resize and rotation operations
+      onTransform(text.id, {
+        x: node.x(),
+        y: node.y(),
+        width: Math.max(5, node.width() * scaleX),
+        fontSize: Math.max(8, (text.fontSize || 16) * scaleY),
+        rotation: Math.round(rotation / 15) * 15 // Snap to 15° increments
+      });
+    } else if (onEdit) {
+      // Fallback to onEdit for resize only (backward compatibility)
       onEdit(text.id, {
         x: node.x(),
         y: node.y(),
@@ -253,21 +269,53 @@ const Text = memo(({
     }
   };
 
-  // Handle mouse enter/leave for hover effects
+  // Handle mouse enter/leave for hover effects and visual feedback
   const handleMouseEnter = (e) => {
     if (!isSelected && !isEditing) {
       // Change cursor to indicate interactivity
       e.target.getStage().container().style.cursor = 'text';
+    }
+    
+    // Show last editor info on hover if available (for any edited object)
+    if (text.lastModifiedByName) {
+      setLastEditorInfo({
+        name: text.lastModifiedByName,
+        timestamp: text.lastModified,
+        color: text._lastEditorColor || '#0066ff'
+      });
+      setShowLastEditor(true);
     }
   };
 
   const handleMouseLeave = (e) => {
     // Reset cursor
     e.target.getStage().container().style.cursor = 'default';
+    // Hide last editor info
+    setShowLastEditor(false);
   };
 
+  // Auto-show conflict resolution feedback
+  useEffect(() => {
+    if (text._conflictResolved && text.lastModifiedByName) {
+      setLastEditorInfo({
+        name: text.lastModifiedByName,
+        timestamp: text.lastModified,
+        color: text._lastEditorColor || '#0066ff'
+      });
+      setShowLastEditor(true);
+      
+      // Auto-hide after 3 seconds
+      const timer = setTimeout(() => {
+        setShowLastEditor(false);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [text._conflictResolved, text.lastModifiedByName, text.lastModified]);
+
   return (
-    <>
+    <Group>
+      {/* Main text */}
       <KonvaText
         ref={textRef}
         // Text properties
@@ -282,8 +330,11 @@ const Text = memo(({
         lineHeight={text.lineHeight || 1}
         letterSpacing={text.letterSpacing || 0}
         width={text.width || undefined}
-        stroke={isSelected ? '#0066ff' : text.stroke}
-        strokeWidth={isSelected ? 1 : text.strokeWidth || 0}
+        stroke={isSelected ? '#0066ff' : (showLastEditor ? lastEditorInfo?.color || '#ff6b6b' : text.stroke)}
+        strokeWidth={isSelected ? 1 : (showLastEditor ? 2 : text.strokeWidth || 0)}
+        
+        // Add dashed stroke for conflict resolution feedback
+        dash={showLastEditor && !isSelected ? [8, 4] : undefined}
         opacity={isEditing ? 0.5 : (text.opacity || 1)}
         
         // Interaction properties
@@ -316,10 +367,39 @@ const Text = memo(({
             return newBox;
           }}
           enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right']}
-          rotateEnabled={false}
+          rotateEnabled={true}
+          keepRatio={false}
+          onTransformEnd={handleTransformEnd}
         />
       )}
-    </>
+      
+      {/* Last editor tooltip */}
+      {showLastEditor && lastEditorInfo && (
+        <Group
+          x={text.x + (text.width || 100) + 10}
+          y={text.y}
+        >
+          {/* Tooltip background */}
+          <Rect
+            x={0}
+            y={0}
+            width={lastEditorInfo.name.length * 8 + 16}
+            height={24}
+            fill="rgba(0, 0, 0, 0.8)"
+            cornerRadius={4}
+          />
+          {/* Tooltip text */}
+          <KonvaText
+            x={8}
+            y={6}
+            text={`Last edited by ${lastEditorInfo.name}`}
+            fontSize={12}
+            fill="white"
+            fontFamily="Arial"
+          />
+        </Group>
+      )}
+    </Group>
   );
 }, (prevProps, nextProps) => {
   // Optimize re-renders - only update if relevant props changed

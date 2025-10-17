@@ -13,6 +13,15 @@ import {
   deleteObject,
   listenToObjects
 } from '../services/firestore.js';
+import { WriteQueue, ConflictResolver } from '../utils/debounce.js';
+import {
+  broadcastDeletionIntent,
+  cancelDeletionIntent,
+  confirmDeletionIntent,
+  listenToDeletionIntents,
+  getObjectDeletionIntent
+} from '../services/deletionIntents.js';
+import { broadcastDeletion, listenToLiveDeletions } from '../services/realtimeDeletions.js';
 
 /**
  * Custom hook for managing canvas state with Firestore persistence
@@ -53,6 +62,17 @@ export const useCanvas = (canvasId = 'main', user = null) => {
   const stageRef = useRef(null);
   const dragStartRef = useRef(null);
   const objectsUnsubscribeRef = useRef(null);
+  
+  // Write queue for debouncing rapid updates (conflict resolution)
+  const writeQueueRef = useRef(null);
+  
+  // Deletion intents state for smooth deletion conflict resolution
+  const [deletionIntents, setDeletionIntents] = useState([]);
+  const deletionIntentsUnsubscribeRef = useRef(null);
+  
+  // Live deletions state for immediate propagation
+  const [liveDeletions, setLiveDeletions] = useState([]);
+  const liveDeletionsUnsubscribeRef = useRef(null);
 
   // Local object management (for immediate UI updates before Firestore sync)
   const addObjectLocally = useCallback((newObject) => {
@@ -93,7 +113,36 @@ export const useCanvas = (canvasId = 'main', user = null) => {
     }
   }, [canvasId, user, addObjectLocally]);
 
-  const updateObject = useCallback(async (objectId, updates) => {
+  // Initialize write queue for debounced updates
+  useEffect(() => {
+    if (canvasId && !writeQueueRef.current) {
+      writeQueueRef.current = new WriteQueue(async (writesToProcess) => {
+        // Batch process all pending writes
+        const promises = [];
+        
+        for (const [objectId, updates] of writesToProcess) {
+          promises.push(
+            updateObjectInFirestore(canvasId, objectId, updates).catch(error => {
+              console.error(`Failed to update object ${objectId}:`, error);
+              setSyncError(error.message);
+            })
+          );
+        }
+        
+        await Promise.allSettled(promises);
+      }, 50); // 50ms debounce delay (below 100ms requirement)
+    }
+    
+    return () => {
+      if (writeQueueRef.current) {
+        writeQueueRef.current.flush(); // Flush any pending writes
+        writeQueueRef.current.clear();
+        writeQueueRef.current = null;
+      }
+    };
+  }, [canvasId]);
+
+  const updateObject = useCallback(async (objectId, updates, options = {}) => {
     if (!canvasId) {
       setObjects(prev => prev.map(obj => 
         obj.id === objectId 
@@ -104,40 +153,130 @@ export const useCanvas = (canvasId = 'main', user = null) => {
     }
 
     try {
-      // Update in Firestore (this will trigger the real-time listener to update local state)
-      await updateObjectInFirestore(canvasId, objectId, updates);
-    } catch (error) {
-      console.error('Failed to update object in Firestore, updating locally only:', error);
-      setSyncError(error.message);
-      // Fallback to local-only if Firestore fails
+      // Check if object has pending deletion intent
+      const deletionBlock = ConflictResolver.checkDeletionBlock(objectId, deletionIntents);
+      if (deletionBlock) {
+        // Show user warning about pending deletion
+        setSyncError(`Warning: "${deletionBlock.userName}" is trying to delete this object`);
+        
+        // Still allow the edit but mark it as conflicted
+        updates._savedFromDeletion = true;
+      }
+
+      // Apply optimistic update locally for immediate feedback
       setObjects(prev => prev.map(obj => 
         obj.id === objectId 
-          ? { ...obj, ...updates, updatedAt: Date.now() }
+          ? { 
+              ...obj, 
+              ...updates, 
+              updatedAt: Date.now(),
+              lastModified: Date.now(),
+              lastModifiedBy: user?.uid,
+              lastModifiedByName: user?.displayName || user?.email || 'Anonymous',
+              _isOptimistic: true // Mark as optimistic update
+            }
+          : obj
+      ));
+
+      // Use write queue for debounced Firestore updates
+      if (writeQueueRef.current) {
+        writeQueueRef.current.queueUpdate(objectId, updates);
+      } else {
+        // Fallback to direct update if write queue not available
+        await updateObjectInFirestore(canvasId, objectId, updates, options);
+      }
+    } catch (error) {
+      console.error('Failed to update object, using local fallback:', error);
+      setSyncError(error.message);
+      
+      // Remove optimistic flag on error
+      setObjects(prev => prev.map(obj => 
+        obj.id === objectId && obj._isOptimistic
+          ? { ...obj, _isOptimistic: false }
           : obj
       ));
     }
-  }, [canvasId]);
+  }, [canvasId, user]);
 
   const removeObject = useCallback(async (objectId) => {
     if (!canvasId) {
       setObjects(prev => prev.filter(obj => obj.id !== objectId));
-      // Remove from selection if it was selected
       setSelectedObjectIds(prev => prev.filter(id => id !== objectId));
       return;
     }
 
-    try {
-      // Remove from Firestore (this will trigger the real-time listener to update local state)
-      await deleteObject(canvasId, objectId);
-    } catch (error) {
-      console.error('Failed to delete object from Firestore, removing locally only:', error);
-      setSyncError(error.message);
-      // Fallback to local-only if Firestore fails
-      setObjects(prev => prev.filter(obj => obj.id !== objectId));
-      // Remove from selection if it was selected
-      setSelectedObjectIds(prev => prev.filter(id => id !== objectId));
+    if (!user) {
+      console.error('Cannot delete object: No user authenticated');
+      return;
     }
-  }, [canvasId]);
+
+    // Store the object for potential rollback
+    let deletedObject = null;
+    let wasSelected = false;
+
+    // Find the object to delete
+    const objectToDelete = objects.find(obj => obj.id === objectId);
+    if (!objectToDelete) {
+      console.warn('Object not found for deletion:', objectId);
+      return;
+    }
+
+    try {
+      // Step 1: Immediate optimistic deletion (for responsiveness)
+      setObjects(prev => {
+        const objToDelete = prev.find(obj => obj.id === objectId);
+        if (objToDelete) {
+          deletedObject = { ...objToDelete, _isOptimisticDelete: true };
+        }
+        return prev.filter(obj => obj.id !== objectId);
+      });
+
+      setSelectedObjectIds(prev => {
+        if (prev.includes(objectId)) {
+          wasSelected = true;
+        }
+        return prev.filter(id => id !== objectId);
+      });
+
+      // Step 2: Broadcast deletion immediately via RTDB (for other users to see)
+      await broadcastDeletion(
+        canvasId, 
+        objectId, 
+        user.uid, 
+        user.displayName || user.email || 'Anonymous'
+      );
+
+      // Also broadcast deletion intent for conflict resolution (optional)
+      const intentId = await broadcastDeletionIntent(
+        canvasId, 
+        objectId, 
+        user.uid, 
+        user.displayName || user.email || 'Anonymous'
+      );
+
+      // Step 3: Delete from Firestore immediately (no grace period delay)
+      await deleteObject(canvasId, objectId);
+      
+      // Step 4: Confirm deletion intent 
+      await confirmDeletionIntent(canvasId, intentId);
+      
+      console.log('✅ Object successfully deleted with immediate propagation:', objectId);
+    } catch (error) {
+      console.error('Failed to delete object, rolling back:', error);
+      setSyncError(`Failed to delete object: ${error.message}`);
+      
+      // Rollback: restore the object to local state
+      if (deletedObject) {
+        const { _isOptimisticDelete, ...cleanObject } = deletedObject;
+        setObjects(prev => [...prev, cleanObject]);
+      }
+      
+      // Rollback: restore selection
+      if (wasSelected) {
+        setSelectedObjectIds(prev => [...prev, objectId]);
+      }
+    }
+  }, [canvasId, user, objects]);
 
   const selectObject = useCallback((objectId, multiSelect = false) => {
     if (multiSelect) {
@@ -246,15 +385,103 @@ export const useCanvas = (canvasId = 'main', user = null) => {
     }, LOADING_TIMEOUT_MS);
 
     try {
-      // Listen to real-time object changes
+      // Listen to real-time object changes with conflict resolution
       const unsubscribe = listenToObjects(canvasId, (firestoreObjects) => {
         clearTimeout(loadingTimeout);
-        setObjects(firestoreObjects);
+        
+        // Apply conflict resolution for incoming objects
+        setObjects(prevObjects => {
+          const resolvedObjects = firestoreObjects.map(remoteObj => {
+            // Find corresponding local object
+            const localObj = prevObjects.find(local => local.id === remoteObj.id);
+            
+            // Apply conflict resolution
+            if (localObj && localObj._isOptimistic) {
+              // If local object has optimistic updates, resolve conflict
+              const resolved = ConflictResolver.resolve(localObj, remoteObj);
+              
+              // Remove optimistic flag from resolved object
+              const { _isOptimistic, ...cleanResolved } = resolved;
+              return cleanResolved;
+            }
+            
+            // No conflict, use remote object as-is
+            return remoteObj;
+          });
+          
+          // Handle deleted objects (objects that exist locally but not in Firestore)
+          const remoteIds = new Set(firestoreObjects.map(obj => obj.id));
+          const localOnlyObjects = prevObjects.filter(local => !remoteIds.has(local.id));
+          
+          // Only keep local objects that are newly created (not yet synced)
+          // Remove any objects that were deleted by other users (not in Firestore anymore)
+          const keptLocalObjects = localOnlyObjects.filter(obj => 
+            !obj._isOptimistic && // Not an optimistic update
+            !obj._isOptimisticDelete && // Not an optimistic deletion
+            !obj.createdAt && // Newly created objects don't have createdAt yet
+            Date.now() - obj.updatedAt < 5000 // Only keep very recent objects (5sec)
+          );
+          
+          // Log deletions for debugging
+          const deletedObjects = localOnlyObjects.filter(obj => 
+            obj.createdAt || // Has been synced to Firestore before
+            Date.now() - obj.updatedAt >= 5000 // Or is old enough to be considered synced
+          );
+          
+          if (deletedObjects.length > 0) {
+            console.log('🗑️ Objects deleted by other users:', deletedObjects.map(obj => obj.id));
+          }
+          
+          return [...resolvedObjects, ...keptLocalObjects];
+        });
+        
         setIsLoading(false);
         setSyncError(null);
       });
 
       objectsUnsubscribeRef.current = unsubscribe;
+
+      // Set up deletion intents listener
+      const deletionIntentsUnsubscribe = listenToDeletionIntents(canvasId, (intents) => {
+        setDeletionIntents(intents);
+      });
+      deletionIntentsUnsubscribeRef.current = deletionIntentsUnsubscribe;
+
+      // Set up live deletions listener for immediate propagation
+      const liveDeletionsUnsubscribe = listenToLiveDeletions(canvasId, (deletions) => {
+        setLiveDeletions(deletions);
+        
+        // Immediately remove deleted objects from local state
+        if (deletions.length > 0) {
+          setObjects(prevObjects => {
+            let updatedObjects = prevObjects;
+            
+            deletions.forEach(deletion => {
+              // Only remove if deleted by someone else (not self)
+              if (deletion.userId !== user?.uid) {
+                updatedObjects = updatedObjects.filter(obj => obj.id !== deletion.objectId);
+                console.log('🗑️ Removed object deleted by', deletion.userName, ':', deletion.objectId);
+              }
+            });
+            
+            return updatedObjects;
+          });
+          
+          // Also remove from selection
+          setSelectedObjectIds(prevSelected => {
+            let updatedSelection = prevSelected;
+            
+            deletions.forEach(deletion => {
+              if (deletion.userId !== user?.uid) {
+                updatedSelection = updatedSelection.filter(id => id !== deletion.objectId);
+              }
+            });
+            
+            return updatedSelection;
+          });
+        }
+      });
+      liveDeletionsUnsubscribeRef.current = liveDeletionsUnsubscribe;
 
     } catch (error) {
       console.error('Error setting up object sync:', error);
@@ -269,6 +496,18 @@ export const useCanvas = (canvasId = 'main', user = null) => {
       if (objectsUnsubscribeRef.current) {
         objectsUnsubscribeRef.current();
         objectsUnsubscribeRef.current = null;
+      }
+      if (deletionIntentsUnsubscribeRef.current) {
+        deletionIntentsUnsubscribeRef.current();
+        deletionIntentsUnsubscribeRef.current = null;
+      }
+      if (liveDeletionsUnsubscribeRef.current) {
+        liveDeletionsUnsubscribeRef.current();
+        liveDeletionsUnsubscribeRef.current = null;
+      }
+      // Flush any pending writes before cleanup
+      if (writeQueueRef.current) {
+        writeQueueRef.current.flush();
       }
     };
   }, [canvasId]);

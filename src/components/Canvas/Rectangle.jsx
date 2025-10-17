@@ -1,5 +1,5 @@
-import React, { memo, useRef } from 'react';
-import { Rect } from 'react-konva';
+import React, { memo, useRef, useState, useEffect } from 'react';
+import { Rect, Group, Text as KonvaText, Transformer } from 'react-konva';
 
 /**
  * Rectangle component with selection and movement capabilities
@@ -11,11 +11,18 @@ const Rectangle = memo(({
   onSelect,
   onMove,
   onDeselect,
+  onTransform, // Function to handle transform operations
   selectedObjects = [], // Array of all selected objects for coordinated dragging
   onMultiMove // Function to handle multi-object movement
 }) => {
   // Track drag start position for multi-object movement
   const dragStartPosRef = useRef(null);
+  const transformerRef = useRef(null);
+  const rectRef = useRef(null);
+  
+  // Visual feedback state for conflict resolution
+  const [showLastEditor, setShowLastEditor] = useState(false);
+  const [lastEditorInfo, setLastEditorInfo] = useState(null);
   
   // Handle mouse down to prevent stage drag
   const handleMouseDown = (e) => {
@@ -125,41 +132,155 @@ const Rectangle = memo(({
       // Change cursor to indicate interactivity
       e.target.getStage().container().style.cursor = 'pointer';
     }
+    
+    // Show last editor info on hover if available (for any edited object)
+    if (rectangle.lastModifiedByName) {
+      setLastEditorInfo({
+        name: rectangle.lastModifiedByName,
+        timestamp: rectangle.lastModified,
+        color: rectangle._lastEditorColor || '#0066ff'
+      });
+      setShowLastEditor(true);
+    }
   };
 
   const handleMouseLeave = (e) => {
     // Reset cursor
     e.target.getStage().container().style.cursor = 'default';
+    // Hide last editor info
+    setShowLastEditor(false);
   };
 
+  // Handle transform end - update rectangle properties
+  const handleTransformEnd = (e) => {
+    const node = rectRef.current;
+    const scaleX = node.scaleX();
+    const scaleY = node.scaleY();
+    const rotation = node.rotation();
+
+    // Reset scale and update properties
+    node.scaleX(1);
+    node.scaleY(1);
+    
+    if (onTransform) {
+      onTransform(rectangle.id, {
+        x: node.x(),
+        y: node.y(),
+        width: Math.max(10, node.width() * scaleX),
+        height: Math.max(10, node.height() * scaleY),
+        rotation: Math.round(rotation / 15) * 15 // Snap to 15° increments
+      });
+    }
+  };
+
+  // Set up transformer when selected
+  useEffect(() => {
+    if (isSelected && transformerRef.current && rectRef.current) {
+      transformerRef.current.nodes([rectRef.current]);
+      transformerRef.current.getLayer().batchDraw();
+    }
+  }, [isSelected]);
+
+  // Auto-show conflict resolution feedback
+  useEffect(() => {
+    if (rectangle._conflictResolved && rectangle.lastModifiedByName) {
+      setLastEditorInfo({
+        name: rectangle.lastModifiedByName,
+        timestamp: rectangle.lastModified,
+        color: rectangle._lastEditorColor || '#0066ff'
+      });
+      setShowLastEditor(true);
+      
+      // Auto-hide after 3 seconds
+      const timer = setTimeout(() => {
+        setShowLastEditor(false);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [rectangle._conflictResolved, rectangle.lastModifiedByName, rectangle.lastModified]);
+
   return (
-    <Rect
-      // Rectangle properties
-      x={rectangle.x}
-      y={rectangle.y}
-      width={rectangle.width}
-      height={rectangle.height}
-      fill={rectangle.fill}
-      stroke={isSelected ? '#0066ff' : rectangle.stroke}
-      strokeWidth={isSelected ? 3 : rectangle.strokeWidth || 2}
-      opacity={rectangle.opacity || 1}
+    <Group>
+      {/* Main rectangle */}
+      <Rect
+        ref={rectRef}
+        // Rectangle properties
+        x={rectangle.x}
+        y={rectangle.y}
+        width={rectangle.width}
+        height={rectangle.height}
+        fill={rectangle.fill}
+        stroke={isSelected ? '#0066ff' : (showLastEditor ? lastEditorInfo?.color || '#ff6b6b' : rectangle.stroke)}
+        strokeWidth={isSelected ? 3 : (showLastEditor ? 3 : rectangle.strokeWidth || 2)}
+        opacity={rectangle.opacity || 1}
+        
+        // Add dashed stroke for conflict resolution feedback
+        dash={showLastEditor && !isSelected ? [8, 4] : undefined}
+        
+        // Interaction properties
+        draggable={isSelected}
+        
+        // Event handlers
+        onMouseDown={handleMouseDown}
+        onClick={handleClick}
+        onTap={handleClick} // Mobile support
+        onDragStart={handleDragStart}
+        onDragMove={handleDragMove}
+        onDragEnd={handleDragEnd}
+        onTransformEnd={handleTransformEnd}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        
+        // Accessibility
+        name={`rectangle-${rectangle.id}`}
+      />
       
-      // Interaction properties
-      draggable={isSelected}
+      {/* Last editor tooltip */}
+      {showLastEditor && lastEditorInfo && (
+        <Group
+          x={rectangle.x + rectangle.width + 10}
+          y={rectangle.y}
+        >
+          {/* Tooltip background */}
+          <Rect
+            x={0}
+            y={0}
+            width={lastEditorInfo.name.length * 8 + 16}
+            height={24}
+            fill="rgba(0, 0, 0, 0.8)"
+            cornerRadius={4}
+          />
+          {/* Tooltip text */}
+          <KonvaText
+            x={8}
+            y={6}
+            text={`Last edited by ${lastEditorInfo.name}`}
+            fontSize={12}
+            fill="white"
+            fontFamily="Arial"
+          />
+        </Group>
+      )}
       
-      // Event handlers
-      onMouseDown={handleMouseDown}
-      onClick={handleClick}
-      onTap={handleClick} // Mobile support
-      onDragStart={handleDragStart}
-      onDragMove={handleDragMove}
-      onDragEnd={handleDragEnd}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      
-      // Accessibility
-      name={`rectangle-${rectangle.id}`}
-    />
+      {/* Transformer for resize and rotate */}
+      {isSelected && (
+        <Transformer
+          ref={transformerRef}
+          boundBoxFunc={(oldBox, newBox) => {
+            // Minimum size constraints
+            if (newBox.width < 10 || newBox.height < 10) {
+              return oldBox;
+            }
+            return newBox;
+          }}
+          enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right']}
+          rotateEnabled={true}
+          keepRatio={false}
+          onTransformEnd={handleTransformEnd}
+        />
+      )}
+    </Group>
   );
 }, (prevProps, nextProps) => {
   // Optimize re-renders - only update if relevant props changed

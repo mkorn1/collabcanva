@@ -670,7 +670,7 @@ collabcanvas/
   - **Files Modified:** `src/hooks/useRealtime.js`
   - **Content:** Compare timestamps on incoming updates, only apply if newer
 
-- [ ] 9.4 Add visual feedback for "who last edited"
+- [x] 9.4 Add visual feedback for "who last edited"
   - **Files Modified:** `src/components/Canvas/Rectangle.jsx`, `Circle.jsx`, `Text.jsx`
   - **Content:** Show colored border with editor's name on hover (fades after 3 seconds)
 
@@ -683,7 +683,7 @@ collabcanvas/
 
 **PR Checklist:**
 - [ ] Two users edit same object → both see consistent final state
-- [ ] Visual indicator shows who last edited (colored border)
+- [x] Visual indicator shows who last edited (colored border)
 - [ ] Rapid edits (10+ changes/sec) don't corrupt state
 - [ ] No "ghost" objects or duplicates
 - [ ] `COLLAB_STRATEGIES.md` clearly documents approach

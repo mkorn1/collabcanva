@@ -1,5 +1,5 @@
-import React, { memo, useRef } from 'react';
-import { Circle as KonvaCircle } from 'react-konva';
+import React, { memo, useRef, useState, useEffect } from 'react';
+import { Circle as KonvaCircle, Group, Rect, Text as KonvaText, Transformer } from 'react-konva';
 
 /**
  * Circle component with selection and movement capabilities
@@ -11,11 +11,18 @@ const Circle = memo(({
   onSelect,
   onMove,
   onDeselect,
+  onTransform, // Function to handle transform operations
   selectedObjects = [], // Array of all selected objects for coordinated dragging
   onMultiMove // Function to handle multi-object movement
 }) => {
   // Track drag start position for multi-object movement
   const dragStartPosRef = useRef(null);
+  const transformerRef = useRef(null);
+  const circleRef = useRef(null);
+  
+  // Visual feedback state for conflict resolution
+  const [showLastEditor, setShowLastEditor] = useState(false);
+  const [lastEditorInfo, setLastEditorInfo] = useState(null);
   
   // Handle mouse down to prevent stage drag
   const handleMouseDown = (e) => {
@@ -119,46 +126,159 @@ const Circle = memo(({
     dragStartPosRef.current = null;
   };
 
-  // Handle mouse enter/leave for future hover effects
+  // Handle mouse enter/leave for hover effects and visual feedback
   const handleMouseEnter = (e) => {
     if (!isSelected) {
       // Change cursor to indicate interactivity
       e.target.getStage().container().style.cursor = 'pointer';
+    }
+    
+    // Show last editor info on hover if available (for any edited object)
+    if (circle.lastModifiedByName) {
+      setLastEditorInfo({
+        name: circle.lastModifiedByName,
+        timestamp: circle.lastModified,
+        color: circle._lastEditorColor || '#0066ff'
+      });
+      setShowLastEditor(true);
     }
   };
 
   const handleMouseLeave = (e) => {
     // Reset cursor
     e.target.getStage().container().style.cursor = 'default';
+    // Hide last editor info
+    setShowLastEditor(false);
   };
 
+  // Handle transform end - update circle properties
+  const handleTransformEnd = (e) => {
+    const node = circleRef.current;
+    const scaleX = node.scaleX();
+    const scaleY = node.scaleY();
+    const rotation = node.rotation();
+
+    // Reset scale and update properties
+    node.scaleX(1);
+    node.scaleY(1);
+    
+    if (onTransform) {
+      onTransform(circle.id, {
+        x: node.x(),
+        y: node.y(),
+        radius: Math.max(5, node.radius() * Math.min(scaleX, scaleY)), // Use minimum scale for uniform circle
+        rotation: Math.round(rotation / 15) * 15 // Snap to 15° increments
+      });
+    }
+  };
+
+  // Set up transformer when selected
+  useEffect(() => {
+    if (isSelected && transformerRef.current && circleRef.current) {
+      transformerRef.current.nodes([circleRef.current]);
+      transformerRef.current.getLayer().batchDraw();
+    }
+  }, [isSelected]);
+
+  // Auto-show conflict resolution feedback
+  useEffect(() => {
+    if (circle._conflictResolved && circle.lastModifiedByName) {
+      setLastEditorInfo({
+        name: circle.lastModifiedByName,
+        timestamp: circle.lastModified,
+        color: circle._lastEditorColor || '#0066ff'
+      });
+      setShowLastEditor(true);
+      
+      // Auto-hide after 3 seconds
+      const timer = setTimeout(() => {
+        setShowLastEditor(false);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [circle._conflictResolved, circle.lastModifiedByName, circle.lastModified]);
+
   return (
-    <KonvaCircle
-      // Circle properties
-      x={circle.x}
-      y={circle.y}
-      radius={circle.radius}
-      fill={circle.fill}
-      stroke={isSelected ? '#0066ff' : circle.stroke}
-      strokeWidth={isSelected ? 3 : circle.strokeWidth || 2}
-      opacity={circle.opacity || 1}
+    <Group>
+      {/* Main circle */}
+      <KonvaCircle
+        ref={circleRef}
+        // Circle properties
+        x={circle.x}
+        y={circle.y}
+        radius={circle.radius}
+        fill={circle.fill}
+        stroke={isSelected ? '#0066ff' : (showLastEditor ? lastEditorInfo?.color || '#ff6b6b' : circle.stroke)}
+        strokeWidth={isSelected ? 3 : (showLastEditor ? 3 : circle.strokeWidth || 2)}
+        opacity={circle.opacity || 1}
+        
+        // Add dashed stroke for conflict resolution feedback
+        dash={showLastEditor && !isSelected ? [8, 4] : undefined}
+        
+        // Interaction properties
+        draggable={isSelected}
+        
+        // Event handlers
+        onMouseDown={handleMouseDown}
+        onClick={handleClick}
+        onTap={handleClick} // Mobile support
+        onDragStart={handleDragStart}
+        onDragMove={handleDragMove}
+        onDragEnd={handleDragEnd}
+        onTransformEnd={handleTransformEnd}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        
+        // Accessibility
+        name={`circle-${circle.id}`}
+      />
       
-      // Interaction properties
-      draggable={isSelected}
+      {/* Last editor tooltip */}
+      {showLastEditor && lastEditorInfo && (
+        <Group
+          x={circle.x + circle.radius + 10}
+          y={circle.y - circle.radius}
+        >
+          {/* Tooltip background */}
+          <Rect
+            x={0}
+            y={0}
+            width={lastEditorInfo.name.length * 8 + 16}
+            height={24}
+            fill="rgba(0, 0, 0, 0.8)"
+            cornerRadius={4}
+          />
+          {/* Tooltip text */}
+          <KonvaText
+            x={8}
+            y={6}
+            text={`Last edited by ${lastEditorInfo.name}`}
+            fontSize={12}
+            fill="white"
+            fontFamily="Arial"
+          />
+        </Group>
+      )}
       
-      // Event handlers
-      onMouseDown={handleMouseDown}
-      onClick={handleClick}
-      onTap={handleClick} // Mobile support
-      onDragStart={handleDragStart}
-      onDragMove={handleDragMove}
-      onDragEnd={handleDragEnd}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      
-      // Accessibility
-      name={`circle-${circle.id}`}
-    />
+      {/* Transformer for resize and rotate */}
+      {isSelected && (
+        <Transformer
+          ref={transformerRef}
+          boundBoxFunc={(oldBox, newBox) => {
+            // Minimum size constraints
+            if (newBox.width < 10 || newBox.height < 10) {
+              return oldBox;
+            }
+            return newBox;
+          }}
+          enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right']}
+          rotateEnabled={true}
+          keepRatio={false}
+          onTransformEnd={handleTransformEnd}
+        />
+      )}
+    </Group>
   );
 }, (prevProps, nextProps) => {
   // Optimize re-renders - only update if relevant props changed

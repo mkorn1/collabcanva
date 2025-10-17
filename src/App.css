@@ -270,7 +270,7 @@ p, div, span {
 .canvas-container {
   position: absolute;
   top: 60px;
-  left: 0;
+  left: 250px; /* Account for sidebar width */
   right: 0;
   bottom: 0;
   overflow: hidden;
@@ -678,6 +678,16 @@ p, div, span {
   
   .cursor-indicator {
     display: none;
+  }
+  
+  .canvas-container {
+    left: 200px; /* Account for smaller sidebar on tablet */
+  }
+}
+
+@media (max-width: 480px) {
+  .canvas-container {
+    left: 180px; /* Account for smallest sidebar on mobile */
   }
 }
 

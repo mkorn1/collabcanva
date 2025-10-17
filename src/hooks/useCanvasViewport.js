@@ -1,39 +1,50 @@
 import { useState, useEffect } from 'react';
 import { HEADER_HEIGHT } from '../utils/constants.js';
 
+// Sidebar width constants
+const SIDEBAR_WIDTH_DESKTOP = 250;
+const SIDEBAR_WIDTH_TABLET = 200;
+const SIDEBAR_WIDTH_MOBILE = 180;
+
 /**
  * Custom hook for managing canvas viewport dimensions and positioning
- * Handles stage size calculations and responsive layout
+ * Handles stage size calculations and responsive layout accounting for sidebar
  */
 export const useCanvasViewport = () => {
   const [stageSize, setStageSize] = useState(() => {
-    // Calculate available space (full window minus header height)
-    return {
-      width: window.innerWidth,
-      height: window.innerHeight - HEADER_HEIGHT
+    // Calculate sidebar width based on screen size
+    const getSidebarWidth = () => {
+      if (window.innerWidth <= 480) return SIDEBAR_WIDTH_MOBILE;
+      if (window.innerWidth <= 768) return SIDEBAR_WIDTH_TABLET;
+      return SIDEBAR_WIDTH_DESKTOP;
     };
-  });
 
-  // Calculate toolbox position for bottom left
-  const [toolboxPosition, setToolboxPosition] = useState(() => {
+    const sidebarWidth = getSidebarWidth();
+    
+    // Calculate available space (full window minus header height and sidebar width)
     return {
-      x: 20,
-      y: window.innerHeight - HEADER_HEIGHT - 300 // Space for toolbox + margin
+      width: window.innerWidth - sidebarWidth,
+      height: window.innerHeight - HEADER_HEIGHT,
+      sidebarWidth: sidebarWidth
     };
   });
 
   // Handle window resize
   useEffect(() => {
     const handleResize = () => {
-      setStageSize({
-        width: window.innerWidth,
-        height: window.innerHeight - HEADER_HEIGHT
-      });
+      // Calculate sidebar width based on screen size
+      const getSidebarWidth = () => {
+        if (window.innerWidth <= 480) return SIDEBAR_WIDTH_MOBILE;
+        if (window.innerWidth <= 768) return SIDEBAR_WIDTH_TABLET;
+        return SIDEBAR_WIDTH_DESKTOP;
+      };
+
+      const sidebarWidth = getSidebarWidth();
       
-      // Update toolbox position on resize
-      setToolboxPosition({
-        x: 20,
-        y: window.innerHeight - HEADER_HEIGHT - 300
+      setStageSize({
+        width: window.innerWidth - sidebarWidth,
+        height: window.innerHeight - HEADER_HEIGHT,
+        sidebarWidth: sidebarWidth
       });
     };
 
@@ -42,7 +53,6 @@ export const useCanvasViewport = () => {
   }, []);
 
   return {
-    stageSize,
-    toolboxPosition
+    stageSize
   };
 };
