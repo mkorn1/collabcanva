@@ -170,7 +170,7 @@ export const useCanvas = (canvasId = 'main', user = null) => {
               ...obj, 
               ...updates, 
               updatedAt: Date.now(),
-              lastModified: Date.now(),
+              // Don't set lastModified here - let Firestore set it with serverTimestamp
               lastModifiedBy: user?.uid,
               lastModifiedByName: user?.displayName || user?.email || 'Anonymous',
               _isOptimistic: true // Mark as optimistic update
@@ -178,12 +178,24 @@ export const useCanvas = (canvasId = 'main', user = null) => {
           : obj
       ));
 
-      // Use write queue for debounced Firestore updates
-      if (writeQueueRef.current) {
-        writeQueueRef.current.queueUpdate(objectId, updates);
-      } else {
-        // Fallback to direct update if write queue not available
+      // Check if this is a transform operation (resize/rotate)
+      const isTransformOperation = updates.rotation !== undefined || 
+                                  updates.width !== undefined || 
+                                  updates.height !== undefined || 
+                                  updates.radius !== undefined || 
+                                  updates.fontSize !== undefined;
+      
+      if (isTransformOperation) {
+        // Transform operations: use direct update for immediate sync
         await updateObjectInFirestore(canvasId, objectId, updates, options);
+      } else {
+        // Other operations: use write queue for debounced updates
+        if (writeQueueRef.current) {
+          writeQueueRef.current.queueUpdate(objectId, updates);
+        } else {
+          // Fallback to direct update if write queue not available
+          await updateObjectInFirestore(canvasId, objectId, updates, options);
+        }
       }
     } catch (error) {
       console.error('Failed to update object, using local fallback:', error);
@@ -397,7 +409,40 @@ export const useCanvas = (canvasId = 'main', user = null) => {
             
             // Apply conflict resolution
             if (localObj && localObj._isOptimistic) {
-              // If local object has optimistic updates, resolve conflict
+              // Check if this is the same user's update (avoid self-conflict)
+              if (localObj.lastModifiedBy === remoteObj.lastModifiedBy) {
+                // Same user - check if the data is essentially the same
+                const isSameData = JSON.stringify({
+                  x: localObj.x,
+                  y: localObj.y,
+                  width: localObj.width,
+                  height: localObj.height,
+                  radius: localObj.radius,
+                  fontSize: localObj.fontSize,
+                  rotation: localObj.rotation
+                }) === JSON.stringify({
+                  x: remoteObj.x,
+                  y: remoteObj.y,
+                  width: remoteObj.width,
+                  height: remoteObj.height,
+                  radius: remoteObj.radius,
+                  fontSize: remoteObj.fontSize,
+                  rotation: remoteObj.rotation
+                });
+                
+                if (isSameData) {
+                  // Same user, same data - use remote object (it has server timestamp)
+                  const { _isOptimistic, ...cleanRemote } = remoteObj;
+                  return cleanRemote;
+                } else {
+                  // Same user, different data - this shouldn't happen, but use remote
+                  console.warn('Same user but different data detected:', { localObj, remoteObj });
+                  const { _isOptimistic, ...cleanRemote } = remoteObj;
+                  return cleanRemote;
+                }
+              }
+              
+              // Different user - apply conflict resolution
               const resolved = ConflictResolver.resolve(localObj, remoteObj);
               
               // Remove optimistic flag from resolved object
