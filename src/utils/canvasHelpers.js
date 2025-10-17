@@ -1,4 +1,4 @@
-import { CANVAS_WIDTH, CANVAS_HEIGHT, MIN_ZOOM, MAX_ZOOM } from './constants.js';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, MIN_ZOOM, MAX_ZOOM, MIN_PAN_POSITION, MAX_PAN_POSITION } from './constants.js';
 
 /**
  * Canvas utility functions for coordinate transformations and bounds checking
@@ -118,6 +118,18 @@ export const clampRectToCanvas = (rect) => {
  */
 export const clampZoom = (zoom) => {
   return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom));
+};
+
+/**
+ * Clamp pan position within allowed boundaries
+ * @param {Object} position - { x, y } pan position
+ * @returns {Object} - Clamped position { x, y }
+ */
+export const clampPanPosition = (position) => {
+  return {
+    x: Math.max(MIN_PAN_POSITION, Math.min(MAX_PAN_POSITION, position.x)),
+    y: Math.max(MIN_PAN_POSITION, Math.min(MAX_PAN_POSITION, position.y))
+  };
 };
 
 /**

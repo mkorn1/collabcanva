@@ -17,3 +17,7 @@ export const MAX_ZOOM = 5.0;
 // Canvas interaction constants
 export const ZOOM_STEP = 0.1;
 export const PAN_SPEED = 1;
+
+// Pan position limits to prevent infinite scrolling
+export const MAX_PAN_POSITION = 5000;
+export const MIN_PAN_POSITION = -5000;

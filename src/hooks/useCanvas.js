@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { INITIAL_ZOOM } from '../utils/constants.js';
 import { 
   clampZoom, 
+  clampPanPosition,
   calculateZoomPosition,
   screenToCanvas,
   canvasToScreen 
@@ -208,14 +209,16 @@ export const useCanvas = (canvasId = 'main', user = null) => {
       const currentPosition = { x: stage.x(), y: stage.y() };
       
       const newPos = calculateZoomPosition(pointer, oldScale, clampedZoom, currentPosition);
-      setPanPosition(newPos);
+      const clampedPos = clampPanPosition(newPos);
+      setPanPosition(clampedPos);
     }
     
     setZoom(clampedZoom);
   }, []);
 
   const updatePanPosition = useCallback((position) => {
-    setPanPosition(position);
+    const clampedPosition = clampPanPosition(position);
+    setPanPosition(clampedPosition);
   }, []);
 
   const resetViewport = useCallback(() => {

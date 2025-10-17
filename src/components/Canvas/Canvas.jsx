@@ -223,9 +223,7 @@ const Canvas = () => {
         y: currentY - (event.deltaY * sensitivity)
       };
       
-      // Update pan position immediately for smooth trackpad response
-      stage.x(newPosition.x);
-      stage.y(newPosition.y);
+      // updatePanPosition will clamp the position to boundaries
       updatePanPosition(newPosition);
     }
   };
