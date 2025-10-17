@@ -27,7 +27,7 @@ const Canvas = () => {
     stopDragging,
     isDragging,
     objects,
-    selectedObjectId,
+    selectedObjectIds,
     currentRectangle,
     isCreatingRectangle,
     isLoading,
@@ -38,7 +38,9 @@ const Canvas = () => {
     cancelCreatingShape,
     selectObject,
     deselectObject,
-    updateObject
+    updateObject,
+    getSelectedObjects,
+    isObjectSelected
   } = useCanvas('main', user);
 
   // State for online users tooltip
@@ -112,6 +114,12 @@ const Canvas = () => {
     }
   }, [initializeCursorTracking, user]);
 
+  // Debug: Track stage position and scale changes
+  useEffect(() => {
+    console.log('📍 Stage Position Changed:', panPosition);
+    console.log('🔍 Stage Scale Changed:', zoom);
+  }, [panPosition, zoom]);
+
   // Handle tool selection from toolbox
   const handleToolSelect = (toolId) => {
     setSelectedTool(toolId);
@@ -153,11 +161,25 @@ const Canvas = () => {
   }, [isCreatingRectangle, cancelCreatingShape]);
 
   // Handle drag (pan) functionality
-  const handleDragStart = () => {
+  const handleDragStart = (e) => {
+    // If event is provided, check if it's from a shape
+    if (e && e.target && e.target !== e.target.getStage()) {
+      console.log('🔍 Drag started on shape, ignoring stage drag');
+      return;
+    }
+    
+    console.log('🎯 Stage drag started');
     startDragging();
   };
 
   const handleDragEnd = (e) => {
+    // Only handle drag end if it's the Stage itself
+    if (e.target !== e.target.getStage()) {
+      console.log('🔍 Drag end on shape, ignoring stage handler');
+      return;
+    }
+    
+    console.log('🎯 Stage drag ended');
     const stage = e.target;
     updatePanPosition({
       x: stage.x(),
@@ -187,10 +209,12 @@ const Canvas = () => {
   // Handle stage clicks (empty canvas area only)
   const handleStageMouseDown = (e) => {
     // More robust check - ensure we're only handling Stage clicks
-    if (e.target !== e.target.getStage() || e.target.getClassName() !== 'Stage') {
+    if (e.target !== e.target.getStage()) {
+      console.log('🔍 Click on shape, ignoring stage handler');
       return;
     }
 
+    console.log('🎯 Click on empty canvas - handling stage interaction');
     const stage = e.target.getStage();
     const pointerPos = stage.getPointerPosition();
 
@@ -210,8 +234,8 @@ const Canvas = () => {
   };
 
   // Handle rectangle selection
-  const handleRectangleSelect = (rectangleId) => {
-    selectObject(rectangleId);
+  const handleRectangleSelect = (rectangleId, multiSelect = false) => {
+    selectObject(rectangleId, multiSelect);
   };
 
   // Handle rectangle movement
@@ -221,6 +245,33 @@ const Canvas = () => {
       console.log('✅ Rectangle moved:', rectangleId, newPosition);
     } catch (error) {
       console.error('❌ Failed to move rectangle:', error);
+    }
+  };
+
+  // Handle multi-object movement
+  const handleMultiObjectMove = async (selectedObjects, delta, isFinal = false) => {
+    try {
+      // Move all selected objects by the same delta
+      const movePromises = selectedObjects.map(async (obj) => {
+        const newX = obj.x + delta.deltaX;
+        const newY = obj.y + delta.deltaY;
+        
+        if (isFinal) {
+          // Final position - update in Firestore
+          await updateObject(obj.id, { x: newX, y: newY });
+        } else {
+          // Intermediate position - for real-time visual feedback
+          // Note: For now we'll skip intermediate updates to reduce Firestore calls
+          // In the future, we could implement local state updates for smoother dragging
+        }
+      });
+      
+      if (isFinal) {
+        await Promise.all(movePromises);
+        console.log('✅ Multi-object move completed for', selectedObjects.length, 'objects');
+      }
+    } catch (error) {
+      console.error('❌ Failed to move multiple objects:', error);
     }
   };
 
@@ -249,6 +300,13 @@ const Canvas = () => {
       return;
     }
 
+    // Only handle mouse up if it's on the Stage itself (not on shapes)
+    if (e.target !== e.target.getStage()) {
+      console.log('🔍 Mouse up on shape, ignoring stage handler');
+      return;
+    }
+
+    console.log('🎯 Mouse up on empty canvas - updating position');
     // Handle normal drag end
     const stage = e.target;
     updatePanPosition({
@@ -271,7 +329,8 @@ const Canvas = () => {
     isLoading,
     syncError,
     objectsCount: objects?.length || 0,
-    selectedObjectId,
+    selectedObjectIds,
+    selectedCount: selectedObjectIds?.length || 0,
     user: user?.uid || 'no-user'
   });
 
@@ -293,7 +352,7 @@ const Canvas = () => {
         y={panPosition.y}
         scaleX={zoom}
         scaleY={zoom}
-        draggable={!isCreatingRectangle && !selectedObjectId}
+        draggable={!isCreatingRectangle}
         onDragStart={handleDragStart}
         onMouseDown={handleStageMouseDown}
         onMouseMove={handleStageMouseMove}
@@ -310,9 +369,11 @@ const Canvas = () => {
                 <Rectangle
                   key={obj.id}
                   rectangle={obj}
-                  isSelected={selectedObjectId === obj.id}
+                  isSelected={isObjectSelected(obj.id)}
                   onSelect={handleRectangleSelect}
                   onMove={handleRectangleMove}
+                  selectedObjects={getSelectedObjects()}
+                  onMultiMove={handleMultiObjectMove}
                 />
               );
             }
@@ -377,7 +438,7 @@ const Canvas = () => {
           <div>Cursor: x:{Math.round(cursorPosition.x)}, y:{Math.round(cursorPosition.y)} {isTracking ? '(tracking)' : '(idle)'}</div>
           <div>State: {isDragging ? 'Dragging' : 'Idle'}</div>
           <div>Presence: {presenceConnected ? '✅' : '❌'} | Cursor Sync: {syncStatus} | Objects: {syncError ? '❌' : '✅'}</div>
-          <div>Objects: {objects.length} | Selected: {selectedObjectId ? '🟦' : '➖'} | Creating: {isCreatingRectangle ? '🟦' : '➖'}</div>
+          <div>Objects: {objects.length} | Selected: {selectedObjectIds.length > 0 ? `🟦 (${selectedObjectIds.length})` : '➖'} | Creating: {isCreatingRectangle ? '🟦' : '➖'}</div>
           <div>
             Online Users: {onlineUsers.length} | 
             <span 

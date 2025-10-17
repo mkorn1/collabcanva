@@ -22,7 +22,7 @@ import {
 export const useCanvas = (canvasId = 'main', user = null) => {
   // Canvas objects state  
   const [objects, setObjects] = useState([]);
-  const [selectedObjectId, setSelectedObjectId] = useState(null);
+  const [selectedObjectIds, setSelectedObjectIds] = useState([]);
   
   // Sync state
   const [isLoading, setIsLoading] = useState(true);
@@ -117,9 +117,8 @@ export const useCanvas = (canvasId = 'main', user = null) => {
     if (!canvasId) {
       console.warn('No canvas ID provided, removing object locally only');
       setObjects(prev => prev.filter(obj => obj.id !== objectId));
-      if (selectedObjectId === objectId) {
-        setSelectedObjectId(null);
-      }
+      // Remove from selection if it was selected
+      setSelectedObjectIds(prev => prev.filter(id => id !== objectId));
       return;
     }
 
@@ -132,23 +131,72 @@ export const useCanvas = (canvasId = 'main', user = null) => {
       setSyncError(error.message);
       // Fallback to local-only if Firestore fails
       setObjects(prev => prev.filter(obj => obj.id !== objectId));
-      if (selectedObjectId === objectId) {
-        setSelectedObjectId(null);
-      }
+      // Remove from selection if it was selected
+      setSelectedObjectIds(prev => prev.filter(id => id !== objectId));
     }
-  }, [canvasId, selectedObjectId]);
+  }, [canvasId]);
 
-  const selectObject = useCallback((objectId) => {
-    setSelectedObjectId(objectId);
+  const selectObject = useCallback((objectId, multiSelect = false) => {
+    if (multiSelect) {
+      setSelectedObjectIds(prev => {
+        if (prev.includes(objectId)) {
+          // Remove from selection if already selected
+          return prev.filter(id => id !== objectId);
+        } else {
+          // Add to selection
+          return [...prev, objectId];
+        }
+      });
+    } else {
+      // Single select - replace selection
+      setSelectedObjectIds([objectId]);
+    }
   }, []);
 
-  const deselectObject = useCallback(() => {
-    setSelectedObjectId(null);
+  const deselectObject = useCallback((objectId = null) => {
+    if (objectId) {
+      // Deselect specific object
+      setSelectedObjectIds(prev => prev.filter(id => id !== objectId));
+    } else {
+      // Deselect all
+      setSelectedObjectIds([]);
+    }
   }, []);
 
-  const getSelectedObject = useCallback(() => {
-    return objects.find(obj => obj.id === selectedObjectId) || null;
-  }, [objects, selectedObjectId]);
+  const addToSelection = useCallback((objectId) => {
+    setSelectedObjectIds(prev => {
+      if (!prev.includes(objectId)) {
+        return [...prev, objectId];
+      }
+      return prev;
+    });
+  }, []);
+
+  const removeFromSelection = useCallback((objectId) => {
+    setSelectedObjectIds(prev => prev.filter(id => id !== objectId));
+  }, []);
+
+  const toggleSelection = useCallback((objectId) => {
+    setSelectedObjectIds(prev => {
+      if (prev.includes(objectId)) {
+        return prev.filter(id => id !== objectId);
+      } else {
+        return [...prev, objectId];
+      }
+    });
+  }, []);
+
+  const selectAll = useCallback(() => {
+    setSelectedObjectIds(objects.map(obj => obj.id));
+  }, [objects]);
+
+  const getSelectedObjects = useCallback(() => {
+    return objects.filter(obj => selectedObjectIds.includes(obj.id));
+  }, [objects, selectedObjectIds]);
+
+  const isObjectSelected = useCallback((objectId) => {
+    return selectedObjectIds.includes(objectId);
+  }, [selectedObjectIds]);
 
   // Canvas viewport functions
   const updateZoom = useCallback((newZoom, pointer = null) => {
@@ -195,7 +243,7 @@ export const useCanvas = (canvasId = 'main', user = null) => {
   // Utility functions
   const clearCanvas = useCallback(() => {
     setObjects([]);
-    setSelectedObjectId(null);
+    setSelectedObjectIds([]);
   }, []);
 
   const getObjectCount = useCallback(() => {
@@ -392,7 +440,7 @@ export const useCanvas = (canvasId = 'main', user = null) => {
   return {
     // State
     objects,
-    selectedObjectId,
+    selectedObjectIds,
     zoom,
     panPosition,
     isDragging,
@@ -413,7 +461,12 @@ export const useCanvas = (canvasId = 'main', user = null) => {
     removeObject,
     selectObject,
     deselectObject,
-    getSelectedObject,
+    addToSelection,
+    removeFromSelection,
+    toggleSelection,
+    selectAll,
+    getSelectedObjects,
+    isObjectSelected,
     
     // Viewport management
     updateZoom,
