@@ -18,6 +18,7 @@ import Rectangle from './Rectangle.jsx';
 import Circle from './Circle.jsx';
 import Text from './Text.jsx';
 import TextFormattingPanel from './TextFormattingPanel.jsx';
+import ColorPicker from './ColorPicker.jsx';
 
 const Canvas = () => {
   // Get current authenticated user FIRST
@@ -133,6 +134,14 @@ const Canvas = () => {
     return selectedObjects.find(obj => obj.type === 'text');
   }, [selectedObjects]);
 
+  // Get any selected object for color picker
+  const selectedObjectForColor = useMemo(() => {
+    return selectedObjects.length === 1 ? selectedObjects[0] : null;
+  }, [selectedObjects]);
+
+  // Color picker state
+  const [showColorPicker, setShowColorPicker] = useState(false);
+
   // Handle rectangle selection
   const handleRectangleSelect = useCallback((rectangleId, multiSelect = false) => {
     selectObject(rectangleId, multiSelect);
@@ -155,6 +164,38 @@ const Canvas = () => {
       console.error('Failed to update text:', error);
     }
   }, [updateObject]);
+
+  // Handle color changes for selected objects
+  const handleColorChange = useCallback(async (newColor) => {
+    if (!selectedObjectForColor) return;
+
+    try {
+      await updateObject(selectedObjectForColor.id, { fill: newColor });
+      setShowColorPicker(false);
+    } catch (error) {
+      console.error('Failed to update object color:', error);
+    }
+  }, [selectedObjectForColor, updateObject]);
+
+  // Handle opening color picker
+  const handleOpenColorPicker = useCallback(() => {
+    if (selectedObjectForColor) {
+      setShowColorPicker(true);
+    }
+  }, [selectedObjectForColor]);
+
+  // Handle canvas export
+  const handleExportCanvas = useCallback(async () => {
+    try {
+      const { exportCanvasToPNG } = await import('../../utils/exportCanvas.js');
+      const success = await exportCanvasToPNG(stageRef, 'collabcanvas');
+      if (success) {
+        console.log('Canvas exported successfully!');
+      }
+    } catch (error) {
+      console.error('Failed to export canvas:', error);
+    }
+  }, [stageRef]);
 
   // Handle multi-object movement
   const handleMultiObjectMove = useCallback(async (selectedObjectsParam, delta, isFinal = false) => {
@@ -332,6 +373,9 @@ const Canvas = () => {
         onToolSelect={handleToolSelect}
         isVisible={true}
         position={toolboxPosition}
+        selectedObjectsCount={selectedObjects.length}
+        onColorPickerOpen={selectedObjects.length === 1 ? handleOpenColorPicker : null}
+        onExportCanvas={handleExportCanvas}
         debugInfo={{
           position: panPosition,
           zoom: zoom,
@@ -352,6 +396,16 @@ const Canvas = () => {
           textObject={selectedTextObject}
           onChange={(updatedText) => handleTextEdit(selectedTextObject.id, updatedText)}
           onClose={() => deselectObject()}
+        />
+      )}
+
+      {/* Color picker - shows when any single object is selected and color picker is opened */}
+      {showColorPicker && selectedObjectForColor && (
+        <ColorPicker
+          currentColor={selectedObjectForColor.fill || '#667eea'}
+          onChange={handleColorChange}
+          onClose={() => setShowColorPicker(false)}
+          isVisible={showColorPicker}
         />
       )}
     </div>

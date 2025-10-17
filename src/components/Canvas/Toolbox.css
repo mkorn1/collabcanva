@@ -486,6 +486,80 @@
   color: #e2e8f0 !important;
 }
 
+/* Toolbox Actions */
+.toolbox-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+  padding-top: 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.action-button {
+  width: 100%;
+  padding: 10px 12px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+}
+
+.action-button:hover {
+  background: #f8f9fa;
+  border-color: #bbb;
+  transform: translateY(-1px);
+}
+
+.action-button .tool-icon {
+  font-size: 16px;
+  min-width: 20px;
+  text-align: center;
+}
+
+.action-button .tool-name {
+  font-weight: 500;
+  color: #333;
+}
+
+.color-button {
+  background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 100%);
+  border: none;
+  color: white;
+}
+
+.color-button .tool-name {
+  color: white;
+}
+
+.color-button:hover {
+  background: linear-gradient(135deg, #ff5252 0%, #26c6da 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.export-button {
+  background: #28a745;
+  border: none;
+  color: white;
+}
+
+.export-button .tool-name {
+  color: white;
+}
+
+.export-button:hover {
+  background: #218838;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
 /* Responsive info section */
 @media (max-width: 768px) {
   .info-item {

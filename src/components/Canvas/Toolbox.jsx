@@ -11,7 +11,11 @@ const Toolbox = ({
   isVisible = true,
   position = { x: 20, y: 100 },
   // Debug info props
-  debugInfo = null
+  debugInfo = null,
+  // New props for color picker and export
+  selectedObjectsCount = 0,
+  onColorPickerOpen = null,
+  onExportCanvas = null
 }) => {
   const [showOnlineUsersTooltip, setShowOnlineUsersTooltip] = useState(false);
   const [isInfoExpanded, setIsInfoExpanded] = useState(true);
@@ -94,6 +98,35 @@ const Toolbox = ({
             <span className="tool-shortcut">{tool.shortcut}</span>
           </button>
         ))}
+      </div>
+
+      {/* Action buttons */}
+      <div className="toolbox-actions">
+        {/* Color picker button - shows when exactly one object is selected */}
+        {selectedObjectsCount === 1 && onColorPickerOpen && (
+          <button
+            className="action-button color-button"
+            onClick={onColorPickerOpen}
+            title="Change Color"
+            aria-label="Change object color"
+          >
+            <span className="tool-icon" aria-hidden="true">🎨</span>
+            <span className="tool-name">Color</span>
+          </button>
+        )}
+
+        {/* Export button */}
+        {onExportCanvas && (
+          <button
+            className="action-button export-button"
+            onClick={onExportCanvas}
+            title="Export as PNG"
+            aria-label="Export canvas as PNG"
+          >
+            <span className="tool-icon" aria-hidden="true">📷</span>
+            <span className="tool-name">Export</span>
+          </button>
+        )}
       </div>
       
       {/* Information section */}

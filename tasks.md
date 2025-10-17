@@ -608,12 +608,12 @@ collabcanvas/
 
 **PR Checklist:**
 - [x] Can create circles and text shapes
-- [] Text has bold/italic/size controls
-- [ ] Delete key removes selected shapes
-- [ ] Cmd+D duplicates selected shape
-- [ ] Arrow keys move selected shape
-- [ ] Cmd+C/Cmd+V copies and pastes
-- [ ] All shortcuts work smoothly
+- [x] Text has bold/italic/size controls
+- [x] Delete key removes selected shapes
+- [x] Cmd+D duplicates selected shape
+- [x] Arrow keys move selected shape
+- [x] Cmd+C/Cmd+V copies and pastes
+- [x] All shortcuts work smoothly
 
 **Points Earned:** 8pts
 
@@ -623,30 +623,30 @@ collabcanvas/
 **Points Value:** Figma Tier 1 (4pts)
 
 #### Tasks:
-- [ ] 8.1 **Tier 1 Feature: Color picker with recent colors**
+- [x] 8.1 **Tier 1 Feature: Color picker with recent colors**
   - **Files Created:** `src/components/Canvas/ColorPicker.jsx`
   - **Content:** Color input, recent colors palette (stores last 8 colors in state)
   - **Figma Points:** +2pts
 
-- [ ] 8.2 Integrate color picker into shape properties
+- [x] 8.2 Integrate color picker into shape properties
   - **Files Modified:** `src/components/Canvas/Canvas.jsx`
   - **Content:** Show color picker when shape selected, update fill color in Firestore
 
-- [ ] 8.3 **Tier 1 Feature: Export canvas as PNG**
+- [x] 8.3 **Tier 1 Feature: Export canvas as PNG**
   - **Files Created:** `src/utils/exportCanvas.js`
   - **Content:** Use Konva's `toDataURL()`, trigger download with current view
   - **Figma Points:** +2pts
 
-- [ ] 8.4 Add export button to UI
+- [x] 8.4 Add export button to UI
   - **Files Modified:** `src/components/Layout/Header.jsx`
   - **Content:** "Export PNG" button in header
 
 **PR Checklist:**
-- [ ] Color picker opens when shape selected
-- [ ] Can change shape fill color
-- [ ] Recent colors show in palette
-- [ ] Export PNG button downloads current canvas view
-- [ ] Exported PNG has correct dimensions
+- [x] Color picker opens when shape selected
+- [x] Can change shape fill color
+- [x] Recent colors show in palette
+- [x] Export PNG button downloads current canvas view
+- [x] Exported PNG has correct dimensions
 
 **Points Earned:** 4pts
 
