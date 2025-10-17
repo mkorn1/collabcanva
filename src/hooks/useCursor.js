@@ -148,14 +148,14 @@ export function useCursor(user, isCanvasActive = true) {
     element.addEventListener('mouseenter', handleMouseEnter, { passive: true });
     element.addEventListener('mouseleave', handleMouseLeave, { passive: true });
     
-    console.log('🖱️ Cursor tracking initialized on element');
+    // console.log('🖱️ Cursor tracking initialized on element');
     
     // Return cleanup function
     return () => {
       element.removeEventListener('mousemove', handleMouseMove);
       element.removeEventListener('mouseenter', handleMouseEnter);
       element.removeEventListener('mouseleave', handleMouseLeave);
-      console.log('🖱️ Cursor tracking cleaned up');
+      // console.log('🖱️ Cursor tracking cleaned up');
     };
   }, [handleMouseMove, handleMouseEnter, handleMouseLeave]);
 

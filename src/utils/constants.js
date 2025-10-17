@@ -21,3 +21,13 @@ export const PAN_SPEED = 1;
 // Pan position limits to prevent infinite scrolling
 export const MAX_PAN_POSITION = 5000;
 export const MIN_PAN_POSITION = -5000;
+
+// UI Layout constants
+export const HEADER_HEIGHT = 60;
+
+// Shape creation constants
+export const MIN_RECTANGLE_SIZE = 10;
+
+// Timeout and interval constants
+export const LOADING_TIMEOUT_MS = 5000;
+export const HEARTBEAT_INTERVAL_MS = 30000;

@@ -57,11 +57,8 @@ try {
   auth = getAuth(app);
   db = getFirestore(app);
   rtdb = getDatabase(app);
-  console.log('✅ Firebase initialized successfully');
-  console.log('✅ Firestore initialized');
-  console.log('✅ Realtime Database initialized');
 } catch (error) {
-  console.error('❌ Firebase initialization failed:', error.message);
+  console.error('Firebase initialization failed:', error.message);
 }
 
 export { app, auth, db, rtdb, validateFirebaseConfig };

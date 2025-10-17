@@ -48,7 +48,7 @@ export function usePresence(user) {
         // Set up presence listener
         presenceUnsubscribeRef.current = listenToPresence((users) => {
           setOnlineUsers(users);
-          console.log('👥 Online users updated:', users.length);
+          // console.log('👥 Online users updated:', users.length);
         });
         
         hasJoinedCanvasRef.current = true;

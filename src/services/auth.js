@@ -43,7 +43,6 @@ export async function signUp(email, password, displayName = null) {
       // Note: cursorColor will be assigned when user enters canvas
     });
 
-    console.log('✅ User signed up successfully:', finalDisplayName);
     
     return {
       uid: user.uid,
@@ -53,7 +52,7 @@ export async function signUp(email, password, displayName = null) {
     };
 
   } catch (error) {
-    console.error('❌ Sign up error:', error.message);
+    console.error('Sign up error:', error.message);
     throw new Error(error.message);
   }
 }
@@ -72,7 +71,6 @@ export async function signIn(email, password) {
     // Update user's online status in Firestore (non-blocking)
     updateUserStatus(user.uid, true);
 
-    console.log('✅ User signed in successfully:', user.displayName || user.email);
     
     return {
       uid: user.uid,
@@ -82,7 +80,7 @@ export async function signIn(email, password) {
     };
 
   } catch (error) {
-    console.error('❌ Sign in error:', error.message);
+    console.error('Sign in error:', error.message);
     throw new Error(error.message);
   }
 }
@@ -101,14 +99,13 @@ export async function signOut() {
 
     // Sign out from Firebase Auth
     await firebaseSignOut(auth);
-    console.log('✅ User signed out successfully');
 
   } catch (error) {
-    console.error('❌ Sign out error:', error.message);
+    console.error('Sign out error:', error.message);
     
     // If it's a permissions error, try to provide more context
     if (error.code === 'permission-denied') {
-      console.error('🚨 Permission denied during sign out. This might be a Firestore security rules issue.');
+      console.error('Permission denied during sign out. This might be a Firestore security rules issue.');
     }
     
     throw new Error(error.message);
@@ -128,9 +125,8 @@ export async function updateUserStatus(uid, isOnline) {
       lastSeen: new Date().toISOString()
     }, { merge: true });
     
-    console.log(`✅ Updated user status: ${isOnline ? 'online' : 'offline'}`);
   } catch (error) {
-    console.warn(`⚠️ Could not update user status:`, error.message);
+    console.warn('Could not update user status:', error.message);
     // Don't throw error - this shouldn't block auth operations
   }
 }
@@ -169,17 +165,14 @@ export function onAuthStateChange(callback) {
  */
 export async function getUserProfile(uid) {
   try {
-    console.log('🔍 Fetching user profile for UID:', uid);
     const docRef = doc(db, 'users', uid);
     const docSnap = await getDoc(docRef);
     
     if (docSnap.exists()) {
       const profileData = docSnap.data();
-      console.log('📄 Raw profile data:', profileData);
       
       // Ensure cursor color exists - if not, assign one
       if (!profileData.cursorColor) {
-        console.log('⚠️ No cursor color found, assigning one...');
         const newColor = generateRandomColor();
         
         // Update the user document with cursor color
@@ -188,16 +181,14 @@ export async function getUserProfile(uid) {
         }, { merge: true });
         
         profileData.cursorColor = newColor;
-        console.log('🎨 Assigned new cursor color:', newColor);
       }
       
       return profileData;
     } else {
-      console.log('❌ User profile document not found for UID:', uid);
       throw new Error('User profile not found');
     }
   } catch (error) {
-    console.error('❌ Error fetching user profile:', error.message);
+    console.error('Error fetching user profile:', error.message);
     throw new Error(error.message);
   }
 }
@@ -216,14 +207,12 @@ export async function ensureCursorColor(uid) {
       const data = docSnap.data();
       
       if (data.cursorColor) {
-        console.log('✅ User already has cursor color:', data.cursorColor);
         return data.cursorColor;
       }
     }
     
     // User doesn't have a cursor color, assign one
     const cursorColor = generateRandomColor();
-    console.log('🎨 Assigning cursor color to existing user:', cursorColor);
     
     await setDoc(docRef, {
       cursorColor: cursorColor,
@@ -232,12 +221,12 @@ export async function ensureCursorColor(uid) {
     
     return cursorColor;
   } catch (error) {
-    console.error('❌ Error ensuring cursor color:', error.message);
+    console.error('Error ensuring cursor color:', error.message);
     
     // Handle permission errors specifically
     if (error.code === 'permission-denied') {
-      console.error('🚨 Firestore permission denied. Please check your security rules.');
-      console.error('💡 Make sure authenticated users can write to /users/{userId} collection');
+      console.error('Firestore permission denied. Please check your security rules.');
+      console.error('Make sure authenticated users can write to /users/{userId} collection');
       throw new Error('Permission denied: Check Firestore security rules');
     }
     

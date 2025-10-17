@@ -12,20 +12,14 @@ export function AuthProvider({ children }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    console.log('🔄 Setting up auth state listener...');
-    
     // Listen to authentication state changes
     const unsubscribe = onAuthStateChange(async (firebaseUser) => {
-      console.log('🔄 Auth state changed:', firebaseUser ? 'User logged in' : 'User logged out');
-      
       try {
         if (firebaseUser) {
-          console.log('👤 Firebase user detected:', firebaseUser.uid);
           
           // Fetch full user profile from Firestore
           try {
             const userProfile = await getUserProfile(firebaseUser.uid);
-            console.log('📄 User profile loaded:', userProfile);
             
             const fullUser = {
               uid: firebaseUser.uid,
@@ -42,7 +36,7 @@ export function AuthProvider({ children }) {
             updateUserStatus(firebaseUser.uid, true);
             
           } catch (profileError) {
-            console.error('❌ Error loading user profile:', profileError.message);
+            console.error('Error loading user profile:', profileError.message);
             
             // Still set basic user info from Firebase Auth if profile loading fails
             const basicUser = {
@@ -55,12 +49,11 @@ export function AuthProvider({ children }) {
             setIsAuthenticated(true);
           }
         } else {
-          console.log('👤 No user authenticated');
           setUser(null);
           setIsAuthenticated(false);
         }
       } catch (error) {
-        console.error('❌ Auth state change error:', error.message);
+        console.error('Auth state change error:', error.message);
         setUser(null);
         setIsAuthenticated(false);
       } finally {
@@ -70,7 +63,6 @@ export function AuthProvider({ children }) {
 
     // Cleanup subscription on unmount
     return () => {
-      console.log('🔄 Cleaning up auth state listener');
       unsubscribe();
     };
   }, []);
@@ -86,10 +78,9 @@ export function AuthProvider({ children }) {
       setLoading(true);
       setError(null); // Clear any previous errors
       const user = await signIn(email, password);
-      console.log('✅ Sign in successful:', user.displayName || user.email);
       return user;
     } catch (error) {
-      console.error('❌ Sign in failed:', error.message);
+      console.error('Sign in failed:', error.message);
       setError(error.message);
       throw error;
     } finally {
@@ -103,10 +94,9 @@ export function AuthProvider({ children }) {
       setLoading(true);
       setError(null); // Clear any previous errors
       const user = await signUp(email, password, displayName);
-      console.log('✅ Sign up successful:', user.displayName || user.email);
       return user;
     } catch (error) {
-      console.error('❌ Sign up failed:', error.message);
+      console.error('Sign up failed:', error.message);
       setError(error.message);
       throw error;
     } finally {
@@ -125,9 +115,8 @@ export function AuthProvider({ children }) {
       }
       
       await signOut();
-      console.log('✅ Sign out successful');
     } catch (error) {
-      console.error('❌ Sign out failed:', error.message);
+      console.error('Sign out failed:', error.message);
       throw error;
     }
   };
@@ -135,10 +124,9 @@ export function AuthProvider({ children }) {
   // Force sign out function (for debugging)
   const forceSignOut = async () => {
     try {
-      console.log('🔄 Force signing out...');
       await handleSignOut();
     } catch (error) {
-      console.error('❌ Force sign out failed, clearing state anyway:', error.message);
+      console.error('Force sign out failed, clearing state anyway:', error.message);
       // Clear state even if sign out fails
       setUser(null);
       setIsAuthenticated(false);

@@ -17,6 +17,7 @@ import {
 import { onDisconnect, ref, set, remove, push, onValue, off, update, getDatabase } from 'firebase/database';
 import { db, auth } from './firebase';
 import { generateRandomColor } from '../utils/colors';
+import { HEARTBEAT_INTERVAL_MS } from '../utils/constants.js';
 
 // Firestore collections
 const PRESENCE_COLLECTION = 'presence';
@@ -151,7 +152,7 @@ export async function updateCursorPosition(userId, position) {
     
     await update(ref(rtdb), updates);
     
-    console.log('✅ Cursor position updated in RTDB');
+    // console.log('✅ Cursor position updated in RTDB');
   } catch (error) {
     console.error('❌ Error updating cursor position in RTDB:', error);
     console.error('🔍 Error details:', {
@@ -216,16 +217,16 @@ export function listenToPresence(callback) {
     const presenceRef = ref(rtdb, 'presence');
     
     const handlePresenceUpdate = (snapshot) => {
-      console.log('📡 RTDB Presence snapshot received. Exists:', snapshot.exists());
+      // console.log('📡 RTDB Presence snapshot received. Exists:', snapshot.exists());
       const presenceData = snapshot.val();
       
       if (!presenceData) {
-        console.log('📡 No presence data found in RTDB');
+        // console.log('📡 No presence data found in RTDB');
         callback([]);
         return;
       }
       
-      console.log('📡 Raw presence data from RTDB:', presenceData);
+      // console.log('📡 Raw presence data from RTDB:', presenceData);
       
       // Convert object to array and filter online users
       const users = Object.entries(presenceData)
@@ -236,7 +237,7 @@ export function listenToPresence(callback) {
         .filter(user => user.isOnline)
         .sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
       
-      console.log('👥 RTDB Presence update:', users.length, 'online users:', users.map(u => u.displayName));
+      // console.log('👥 RTDB Presence update:', users.length, 'online users:', users.map(u => u.displayName));
       callback(users);
     };
     
@@ -245,7 +246,7 @@ export function listenToPresence(callback) {
       console.error('❌ RTDB Presence listener error:', error);
     });
     
-    console.log('👂 RTDB Presence listener started');
+    // console.log('👂 RTDB Presence listener started');
     
     // Return unsubscribe function
     return () => {
@@ -271,7 +272,7 @@ export async function setUserOffline(userId) {
     
     await remove(presenceRef);
     
-    console.log('✅ User removed from RTDB presence:', userId);
+    // console.log('✅ User removed from RTDB presence:', userId);
   } catch (error) {
     console.error('❌ Error removing user from RTDB presence:', error);
     throw error;
@@ -323,7 +324,7 @@ export async function updateHeartbeat(userId) {
  * @param {number} intervalMs - Heartbeat interval in milliseconds (default: 30s)
  * @returns {number} Interval ID for cleanup
  */
-export function startHeartbeat(userId, intervalMs = 30000) {
+export function startHeartbeat(userId, intervalMs = HEARTBEAT_INTERVAL_MS) {
   console.log('🫀 Starting heartbeat for user:', userId);
   
   const intervalId = setInterval(() => {

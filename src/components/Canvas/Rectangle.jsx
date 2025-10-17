@@ -25,9 +25,6 @@ const Rectangle = memo(({
 
   // Handle rectangle click for selection
   const handleClick = (e) => {
-    console.log('🟦 Rectangle clicked:', rectangle.id);
-    console.log('🟦 Stage pos before selection:', e.target.getStage().position());
-    
     e.evt.stopPropagation(); // Use Konva's proper event stopping
     e.cancelBubble = true; // Keep for compatibility
     
@@ -36,8 +33,6 @@ const Rectangle = memo(({
       const isMultiSelect = e.evt.ctrlKey || e.evt.metaKey;
       onSelect(rectangle.id, isMultiSelect);
     }
-    
-    console.log('🟦 Stage pos after selection:', e.target.getStage().position());
   };
 
   // Handle drag start - prepare for movement

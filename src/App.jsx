@@ -22,9 +22,8 @@ function MainApp() {
   const handleSignOut = async () => {
     try {
       await signOut()
-      console.log('✅ Signed out successfully')
     } catch (error) {
-      console.error('❌ Sign out failed:', error.message)
+      console.error('Sign out failed:', error.message)
     }
   }
 
@@ -71,20 +70,12 @@ function MainApp() {
 function AppContent() {
   const { isAuthenticated, loading, user, forceSignOut } = useAuth()
 
-  // Test Firebase connection on component mount
+  // Validate Firebase connection on mount
   useEffect(() => {
-    console.log('🔥 Testing Firebase connection...')
-    console.log('Firebase App:', app ? '✅ Connected' : '❌ Failed')
-    console.log('Firebase Auth:', auth ? '✅ Available' : '❌ Failed')
-    console.log('Firebase Firestore:', db ? '✅ Available' : '❌ Failed')
-    
-    // Debug current auth state
-    console.log('🔍 Current auth state:')
-    console.log('- isAuthenticated:', isAuthenticated)
-    console.log('- loading:', loading)
-    console.log('- user:', user)
-    console.log('- Firebase currentUser:', auth.currentUser)
-  }, [isAuthenticated, loading, user])
+    if (!app || !auth || !db) {
+      console.error('Firebase services not properly initialized')
+    }
+  }, [])
 
   // Show loading spinner while checking auth state
   if (loading) {
@@ -104,46 +95,7 @@ function AppContent() {
   // Show auth forms if not authenticated
   if (!isAuthenticated) {
     return (
-      <div>
-        <AuthForm onAuthSuccess={() => console.log('🎉 User authenticated!')} />
-        {/* Debug panel for development */}
-        {process.env.NODE_ENV === 'development' && (
-          <div style={{ 
-            position: 'fixed', 
-            top: '10px', 
-            left: '10px', 
-            background: 'rgba(0,0,0,0.8)', 
-            color: '#ffffff !important', 
-            padding: '10px', 
-            fontSize: '12px',
-            borderRadius: '5px'
-          }}>
-            <div style={{ color: '#ffffff !important' }}>🔍 Debug Info:</div>
-            <div style={{ color: '#ffffff !important' }}>Auth: {isAuthenticated ? 'Yes' : 'No'}</div>
-            <div style={{ color: '#ffffff !important' }}>Loading: {loading ? 'Yes' : 'No'}</div>
-            <div style={{ color: '#ffffff !important' }}>User: {user ? 'Present' : 'None'}</div>
-            <div style={{ color: '#ffffff !important' }}>Firebase User: {auth.currentUser ? 'Present' : 'None'}</div>
-            <button 
-              onClick={() => {
-                console.log('🔄 Force auth state refresh')
-                window.location.reload()
-              }}
-              style={{ marginTop: '5px', fontSize: '10px', marginRight: '5px' }}
-            >
-              Force Refresh
-            </button>
-            <button 
-              onClick={() => {
-                console.log('🔄 Force sign out')
-                forceSignOut()
-              }}
-              style={{ marginTop: '5px', fontSize: '10px' }}
-            >
-              Force Sign Out
-            </button>
-          </div>
-        )}
-      </div>
+      <AuthForm />
     )
   }
 

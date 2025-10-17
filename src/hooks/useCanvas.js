@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { INITIAL_ZOOM } from '../utils/constants.js';
+import { INITIAL_ZOOM, MIN_RECTANGLE_SIZE, LOADING_TIMEOUT_MS } from '../utils/constants.js';
 import { 
   clampZoom, 
   clampPanPosition,
@@ -62,7 +62,6 @@ export const useCanvas = (canvasId = 'main', user = null) => {
   // Firestore object management
   const addObject = useCallback(async (newObject) => {
     if (!canvasId) {
-      console.warn('No canvas ID provided, adding object locally only');
       return addObjectLocally(newObject);
     }
 
@@ -77,10 +76,9 @@ export const useCanvas = (canvasId = 'main', user = null) => {
 
       // Save to Firestore (this will trigger the real-time listener to update local state)
       const firestoreId = await createObject(canvasId, objectForFirestore);
-      console.log('✅ Object saved to Firestore with ID:', firestoreId);
       return firestoreId;
     } catch (error) {
-      console.error('❌ Failed to save object to Firestore, keeping local only:', error);
+      console.error('Failed to save object to Firestore, keeping local only:', error);
       setSyncError(error.message);
       // Keep the object locally even if Firestore fails
       return newObject.id;
@@ -89,7 +87,6 @@ export const useCanvas = (canvasId = 'main', user = null) => {
 
   const updateObject = useCallback(async (objectId, updates) => {
     if (!canvasId) {
-      console.warn('No canvas ID provided, updating object locally only');
       setObjects(prev => prev.map(obj => 
         obj.id === objectId 
           ? { ...obj, ...updates, updatedAt: Date.now() }
@@ -101,9 +98,8 @@ export const useCanvas = (canvasId = 'main', user = null) => {
     try {
       // Update in Firestore (this will trigger the real-time listener to update local state)
       await updateObjectInFirestore(canvasId, objectId, updates);
-      console.log('✅ Object updated in Firestore:', objectId);
     } catch (error) {
-      console.error('❌ Failed to update object in Firestore, updating locally only:', error);
+      console.error('Failed to update object in Firestore, updating locally only:', error);
       setSyncError(error.message);
       // Fallback to local-only if Firestore fails
       setObjects(prev => prev.map(obj => 
@@ -116,7 +112,6 @@ export const useCanvas = (canvasId = 'main', user = null) => {
 
   const removeObject = useCallback(async (objectId) => {
     if (!canvasId) {
-      console.warn('No canvas ID provided, removing object locally only');
       setObjects(prev => prev.filter(obj => obj.id !== objectId));
       // Remove from selection if it was selected
       setSelectedObjectIds(prev => prev.filter(id => id !== objectId));
@@ -126,9 +121,8 @@ export const useCanvas = (canvasId = 'main', user = null) => {
     try {
       // Remove from Firestore (this will trigger the real-time listener to update local state)
       await deleteObject(canvasId, objectId);
-      console.log('✅ Object deleted from Firestore:', objectId);
     } catch (error) {
-      console.error('❌ Failed to delete object from Firestore, removing locally only:', error);
+      console.error('Failed to delete object from Firestore, removing locally only:', error);
       setSyncError(error.message);
       // Fallback to local-only if Firestore fails
       setObjects(prev => prev.filter(obj => obj.id !== objectId));
@@ -162,29 +156,6 @@ export const useCanvas = (canvasId = 'main', user = null) => {
       // Deselect all
       setSelectedObjectIds([]);
     }
-  }, []);
-
-  const addToSelection = useCallback((objectId) => {
-    setSelectedObjectIds(prev => {
-      if (!prev.includes(objectId)) {
-        return [...prev, objectId];
-      }
-      return prev;
-    });
-  }, []);
-
-  const removeFromSelection = useCallback((objectId) => {
-    setSelectedObjectIds(prev => prev.filter(id => id !== objectId));
-  }, []);
-
-  const toggleSelection = useCallback((objectId) => {
-    setSelectedObjectIds(prev => {
-      if (prev.includes(objectId)) {
-        return prev.filter(id => id !== objectId);
-      } else {
-        return [...prev, objectId];
-      }
-    });
   }, []);
 
   const selectAll = useCallback(() => {
@@ -243,15 +214,6 @@ export const useCanvas = (canvasId = 'main', user = null) => {
     setIsCreating(false);
   }, []);
 
-  // Utility functions
-  const clearCanvas = useCallback(() => {
-    setObjects([]);
-    setSelectedObjectIds([]);
-  }, []);
-
-  const getObjectCount = useCallback(() => {
-    return objects.length;
-  }, [objects]);
 
   // Canvas coordinate transformations
   const convertScreenToCanvas = useCallback((screenPoint) => {
@@ -265,24 +227,19 @@ export const useCanvas = (canvasId = 'main', user = null) => {
   // Firestore synchronization
   useEffect(() => {
     if (!canvasId) {
-      console.log('🟡 No canvas ID provided, using local-only mode');
       setIsLoading(false);
       return;
     }
 
-    console.log('🔄 Setting up canvas object sync for canvas:', canvasId);
-
     // Set a timeout to prevent infinite loading
     const loadingTimeout = setTimeout(() => {
-      console.warn('⏰ Loading timeout reached, continuing with local-only mode');
       setIsLoading(false);
       setSyncError('Connection timeout - using local mode');
-    }, 5000);
+    }, LOADING_TIMEOUT_MS);
 
     try {
       // Listen to real-time object changes
       const unsubscribe = listenToObjects(canvasId, (firestoreObjects) => {
-        console.log('📡 Received object update from Firestore:', firestoreObjects.length, 'objects');
         clearTimeout(loadingTimeout);
         setObjects(firestoreObjects);
         setIsLoading(false);
@@ -292,7 +249,7 @@ export const useCanvas = (canvasId = 'main', user = null) => {
       objectsUnsubscribeRef.current = unsubscribe;
 
     } catch (error) {
-      console.error('❌ Error setting up object sync:', error);
+      console.error('Error setting up object sync:', error);
       clearTimeout(loadingTimeout);
       setSyncError(error.message);
       setIsLoading(false);
@@ -302,7 +259,6 @@ export const useCanvas = (canvasId = 'main', user = null) => {
     return () => {
       clearTimeout(loadingTimeout);
       if (objectsUnsubscribeRef.current) {
-        console.log('🧹 Cleaning up object sync');
         objectsUnsubscribeRef.current();
         objectsUnsubscribeRef.current = null;
       }
@@ -334,8 +290,6 @@ export const useCanvas = (canvasId = 'main', user = null) => {
     };
     
     setCurrentRectangle(initialRect);
-    
-    console.log('🟦 Started rectangle creation at:', canvasPoint);
   }, []);
 
   const updateRectangleCreation = useCallback((currentPoint) => {
@@ -369,8 +323,6 @@ export const useCanvas = (canvasId = 'main', user = null) => {
     setIsCreatingRectangle(false);
     setIsCreating(false);
     dragStartRef.current = null;
-    
-    console.log('❌ Rectangle creation cancelled');
   }, []);
 
   const finishRectangleCreation = useCallback((userColor = '#667eea', userId = null) => {
@@ -379,9 +331,7 @@ export const useCanvas = (canvasId = 'main', user = null) => {
     }
     
     // Only create rectangle if it has meaningful size
-    const minSize = 10; // Minimum 10px width or height
-    if (currentRectangle.width < minSize && currentRectangle.height < minSize) {
-      console.log('🟦 Rectangle too small, cancelling creation');
+    if (currentRectangle.width < MIN_RECTANGLE_SIZE && currentRectangle.height < MIN_RECTANGLE_SIZE) {
       cancelRectangleCreation();
       return null;
     }
@@ -406,7 +356,6 @@ export const useCanvas = (canvasId = 'main', user = null) => {
     setIsCreating(false);
     dragStartRef.current = null;
     
-    console.log('✅ Rectangle created successfully:', finalRect);
     return objectId;
   }, [isCreatingRectangle, currentRectangle, addObject, cancelRectangleCreation]);
 
@@ -464,9 +413,6 @@ export const useCanvas = (canvasId = 'main', user = null) => {
     removeObject,
     selectObject,
     deselectObject,
-    addToSelection,
-    removeFromSelection,
-    toggleSelection,
     selectAll,
     getSelectedObjects,
     isObjectSelected,
@@ -482,12 +428,6 @@ export const useCanvas = (canvasId = 'main', user = null) => {
     startCreating,
     stopCreating,
     
-    // Shape creation (rectangle-specific)
-    startRectangleCreation,
-    updateRectangleCreation,
-    finishRectangleCreation,
-    cancelRectangleCreation,
-    
     // Shape creation (generic)
     startCreatingShape,
     updateCreatingShape,
@@ -495,8 +435,6 @@ export const useCanvas = (canvasId = 'main', user = null) => {
     cancelCreatingShape,
     
     // Utilities
-    clearCanvas,
-    getObjectCount,
     screenToCanvas: convertScreenToCanvas,
     canvasToScreen: convertCanvasToScreen
   };
