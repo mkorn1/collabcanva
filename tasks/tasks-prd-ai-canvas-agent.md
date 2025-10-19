@@ -38,35 +38,35 @@ Based on: `prd-ai-canvas-agent.md`
   - [x] 1.11 Create AIAgentPanel.css with responsive styling
   - [x] 1.12 Add error message styling for system messages
 
-- [ ] 2.0 Infrastructure Setup and OpenAI Integration
-  - [ ] 2.1 Install OpenAI package (`npm install openai`)
-  - [ ] 2.2 Create OpenAI dashboard account and get API key
-  - [ ] 2.3 Set up environment variable `REACT_APP_OPENAI_API_KEY`
-  - [ ] 2.4 Create `src/services/aiAgent.js` service file
-  - [ ] 2.5 Implement basic OpenAI client initialization
-  - [ ] 2.6 Create `processCommand` function with basic API call
-  - [ ] 2.7 Add error handling for network failures and API errors
-  - [ ] 2.8 Implement rate limiting (4 commands per minute per user)
-  - [ ] 2.9 Add performance monitoring (timestamps for response time)
-  - [ ] 2.10 Create basic system prompt template
-  - [ ] 2.11 Test OpenAI integration with simple chat messages
-  - [ ] 2.12 Add LangSmith integration (optional monitoring)
+- [x] 2.0 Infrastructure Setup and OpenAI Integration
+  - [x] 2.1 Install OpenAI package (`npm install openai`)
+  - [x] 2.2 Create OpenAI dashboard account and get API key
+  - [x] 2.3 Set up environment variable `REACT_APP_OPENAI_API_KEY`
+  - [x] 2.4 Create `src/services/aiAgent.js` service file
+  - [x] 2.5 Implement basic OpenAI client initialization
+  - [x] 2.6 Create `processCommand` function with basic API call
+  - [x] 2.7 Add error handling for network failures and API errors
+  - [x] 2.8 Implement rate limiting (4 commands per minute per user)
+  - [x] 2.9 Add performance monitoring (timestamps for response time)
+  - [x] 2.10 Create basic system prompt template
+  - [x] 2.11 Test OpenAI integration with simple chat messages
+  - [x] 2.12 Add LangSmith integration (optional monitoring)
 
 - [ ] 3.0 Canvas Function Audit and Command Executor
-  - [ ] 3.1 Audit existing canvas functions in `useCanvas.js`
-  - [ ] 3.2 Document function signatures for createObject, updateObject, deleteObject
-  - [ ] 3.3 Audit canvas manipulation functions in `useCanvasTools.js`
-  - [ ] 3.4 Document object properties and constraints (position, size, styling)
-  - [ ] 3.5 Create `src/services/commandExecutor.js` file
-  - [ ] 3.6 Implement `executeCommands` function with function call mapping
-  - [ ] 3.7 Create `create_shape` execution logic
-  - [ ] 3.8 Create `modify_shape` execution logic
-  - [ ] 3.9 Create `delete_shape` execution logic
-  - [ ] 3.10 Implement object resolution logic (find objects by description)
-  - [ ] 3.11 Add selected object handling (use selected objects when not specified)
-  - [ ] 3.12 Create preview overlay UI component for command execution
-  - [ ] 3.13 Implement approve/reject functionality for preview mode
-  - [ ] 3.14 Add error handling for partial command failures
+  - [x] 3.1 Audit existing canvas functions in `useCanvas.js`
+  - [x] 3.2 Document function signatures for createObject, updateObject, deleteObject
+  - [x] 3.3 Audit canvas manipulation functions in `useCanvasTools.js`
+  - [x] 3.4 Document object properties and constraints (position, size, styling)
+  - [x] 3.5 Create `src/services/commandExecutor.js` file
+  - [x] 3.6 Implement `executeCommands` function with function call mapping
+  - [x] 3.7 Create `create_shape` execution logic
+  - [x] 3.8 Create `modify_shape` execution logic
+  - [x] 3.9 Create `delete_shape` execution logic
+  - [x] 3.10 Implement object resolution logic (find objects by description)
+  - [x] 3.11 Add selected object handling (use selected objects when not specified)
+  - [x] 3.12 Create preview overlay UI component for command execution
+  - [x] 3.13 Implement approve/reject functionality for preview mode
+  - [x] 3.14 Add error handling for partial command failures
 
 - [ ] 4.0 Command Processing and Function Schema
   - [ ] 4.1 Define OpenAI function schema for 4 core functions

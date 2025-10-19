@@ -37,9 +37,23 @@ CollabCanvas is a 24-hour MVP school project that demonstrates real-time collabo
    - Copy Firebase config from Project Settings
 
 4. Configure environment variables:
+   Create a `.env` file in the root directory with the following variables:
    ```bash
-   cp .env.example .env
-   # Edit .env with your Firebase configuration
+   # Firebase Configuration
+   VITE_FIREBASE_API_KEY=your_firebase_api_key_here
+   VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+   VITE_FIREBASE_PROJECT_ID=your_project_id
+   VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+   VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+   VITE_FIREBASE_APP_ID=your_app_id
+   
+   # OpenAI Configuration (for AI Agent feature)
+   VITE_OPENAI_API_KEY=your_openai_api_key_here
+   
+   # LangSmith Configuration (optional)
+   VITE_LANGSMITH_API_KEY=your_langsmith_api_key_here
+   VITE_LANGSMITH_ENDPOINT=https://api.smith.langchain.com
+   VITE_LANGSMITH_PROJECT=CollabCanvas-AI-Agent
    ```
 
 5. Start the development server:

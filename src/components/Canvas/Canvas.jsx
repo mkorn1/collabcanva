@@ -645,7 +645,7 @@ const Canvas = () => {
       )}
 
       {/* Debug info (development only) */}
-      {process.env.NODE_ENV === 'development' && (
+      {import.meta.env.DEV && (
         <div className="canvas-debug">
           <div>Zoom: {(zoom * 100).toFixed(0)}% | Objects: {objects.length} | Online: {onlineUsers.length}</div>
         </div>
@@ -693,7 +693,7 @@ const Canvas = () => {
       )}
 
       {/* TEMPORARY TEST BUTTON FOR TOOLTIPS */}
-      {process.env.NODE_ENV === 'development' && (
+      {import.meta.env.DEV && (
         <button 
           onClick={() => {
             // Force visual feedback on the first object
@@ -730,7 +730,7 @@ const Canvas = () => {
       )}
 
       {/* PERFORMANCE MONITORING DISPLAY */}
-      {process.env.NODE_ENV === 'development' && (
+      {import.meta.env.DEV && (
         <PerformanceStats />
       )}
     </div>

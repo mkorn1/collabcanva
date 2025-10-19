@@ -37,7 +37,7 @@ export default function AuthForm({ onAuthSuccess, defaultMode = 'login' }) {
       )}
       
       {/* Demo Mode Toggle (for development/testing) */}
-      {process.env.NODE_ENV === 'development' && (
+      {import.meta.env.DEV && (
         <div className="demo-controls">
           <button 
             onClick={toggleMode}

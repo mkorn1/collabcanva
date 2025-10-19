@@ -13,7 +13,8 @@ const AIAgentPanel = ({
   isLoading = false,
   messages = [],
   onSendMessage = null,
-  onTogglePanel = null
+  onTogglePanel = null,
+  isServiceAvailable = true
 }) => {
   const [isMinimized, setIsMinimized] = useState(false);
   const [inputValue, setInputValue] = useState('');
@@ -116,13 +117,23 @@ const AIAgentPanel = ({
             <div className="ai-messages">
               {messages.length === 0 ? (
                 <div className="ai-welcome-message">
-                  <p>Welcome! I can help you manipulate the canvas with natural language commands.</p>
-                  <p>Try saying:</p>
-                  <ul>
-                    <li>"Create a red circle"</li>
-                    <li>"Move the blue rectangle to the center"</li>
-                    <li>"Arrange these shapes in a row"</li>
-                  </ul>
+                  {isServiceAvailable ? (
+                    <>
+                      <p>Welcome! I can help you manipulate the canvas with natural language commands.</p>
+                      <p>Try saying:</p>
+                      <ul>
+                        <li>"Create a red circle"</li>
+                        <li>"Move the blue rectangle to the center"</li>
+                        <li>"Arrange these shapes in a row"</li>
+                      </ul>
+                    </>
+                  ) : (
+                    <div className="ai-service-unavailable">
+                      <p>⚠️ AI Assistant is not available</p>
+                      <p>To enable AI features, please configure your OpenAI API key in the .env file.</p>
+                      <p>See the README for setup instructions.</p>
+                    </div>
+                  )}
                 </div>
               ) : (
                 messages.map((message, index) => (
@@ -162,15 +173,15 @@ const AIAgentPanel = ({
                 value={inputValue}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyPress}
-                placeholder="Type your command here... (Enter to send, Shift+Enter for new line)"
-                disabled={isLoading}
+                placeholder={isServiceAvailable ? "Type your command here... (Enter to send, Shift+Enter for new line)" : "AI service not available"}
+                disabled={isLoading || !isServiceAvailable}
                 rows={1}
                 aria-label="AI command input"
               />
               <button
                 className="ai-send-button"
                 onClick={handleSendMessage}
-                disabled={!inputValue.trim() || isLoading}
+                disabled={!inputValue.trim() || isLoading || !isServiceAvailable}
                 aria-label="Send message"
                 title="Send message"
               >
