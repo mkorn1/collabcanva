@@ -350,10 +350,23 @@ const Canvas = () => {
   // Handle multi-object transform operations (resize and rotation) with performance monitoring
   const handleMultiObjectTransform = useCallback(withPerformanceMonitoring('multiObjectTransform', async (selectedObjectsParam, transformData, isFinal = false) => {
     try {
-      console.log('🔧 MULTI-OBJECT TRANSFORM:', {
-        selectedObjects: selectedObjectsParam.length,
+      console.log('🔧 MULTI-OBJECT TRANSFORM RECEIVED:', {
+        selectedObjectsCount: selectedObjectsParam.length,
+        selectedObjectIds: selectedObjectsParam.map(obj => ({ id: obj.id, type: obj.type, width: obj.width, height: obj.height, rotation: obj.rotation })),
         transformData,
+        transformDataKeys: Object.keys(transformData),
         isFinal
+      });
+      
+      console.log('🔧 MULTI-OBJECT TRANSFORM DATA ANALYSIS:', {
+        hasWidth: transformData.width !== undefined,
+        hasHeight: transformData.height !== undefined,
+        hasRotation: transformData.rotation !== undefined,
+        hasX: transformData.x !== undefined,
+        hasY: transformData.y !== undefined,
+        hasScaleX: transformData.scaleX !== undefined,
+        hasScaleY: transformData.scaleY !== undefined,
+        hasFontSize: transformData.fontSize !== undefined
       });
 
       if (!isFinal) {
@@ -382,42 +395,64 @@ const Canvas = () => {
         const batchPromises = batch.map(async (obj) => {
           const updates = {};
           
-          // Handle position changes (if any)
+          console.log(`🔧 PROCESSING OBJECT ${obj.id}:`, {
+            originalData: {
+              width: obj.width,
+              height: obj.height,
+              rotation: obj.rotation,
+              x: obj.x,
+              y: obj.y
+            },
+            transformData
+          });
+          
+          // Handle position changes (if any) - use deltas for multi-object operations
           if (transformData.deltaX !== undefined && transformData.deltaY !== undefined) {
             updates.x = obj.x + transformData.deltaX;
             updates.y = obj.y + transformData.deltaY;
+            console.log(`🔧 APPLYING POSITION DELTA to ${obj.id}:`, { deltaX: transformData.deltaX, deltaY: transformData.deltaY });
           }
           
-          // Handle rotation changes (if any)
+          // Handle rotation changes (if any) - apply same rotation to all objects
           if (transformData.rotation !== undefined) {
             updates.rotation = transformData.rotation;
+            console.log(`🔧 APPLYING ROTATION to ${obj.id}:`, { from: obj.rotation, to: transformData.rotation });
           }
           
-          // Handle scale changes (if any)
+          // Handle scale changes (if any) - apply same scale to all objects
           if (transformData.scaleX !== undefined) {
             updates.scaleX = transformData.scaleX;
+            console.log(`🔧 APPLYING SCALE X to ${obj.id}:`, { to: transformData.scaleX });
           }
           if (transformData.scaleY !== undefined) {
             updates.scaleY = transformData.scaleY;
+            console.log(`🔧 APPLYING SCALE Y to ${obj.id}:`, { to: transformData.scaleY });
           }
           
-          // Handle size changes (if any)
+          // Handle size changes (if any) - size data is now explicitly excluded from rotation operations
           if (transformData.width !== undefined) {
             updates.width = transformData.width;
+            console.log(`🔧 APPLYING WIDTH to ${obj.id}:`, { from: obj.width, to: transformData.width });
           }
           if (transformData.height !== undefined) {
             updates.height = transformData.height;
+            console.log(`🔧 APPLYING HEIGHT to ${obj.id}:`, { from: obj.height, to: transformData.height });
           }
           
-          // Handle text-specific properties
+          // Handle text-specific properties - fontSize is now explicitly excluded from rotation operations
           if (transformData.fontSize !== undefined) {
             updates.fontSize = transformData.fontSize;
+            console.log(`🔧 APPLYING FONT SIZE to ${obj.id}:`, { to: transformData.fontSize });
           }
+          
+          console.log(`🔧 FINAL UPDATES for ${obj.id}:`, updates);
           
           // Apply updates if any exist
           if (Object.keys(updates).length > 0) {
             await updateObject(obj.id, updates);
             console.log(`🔧 MULTI-OBJECT TRANSFORM: Updated object ${obj.id}`, updates);
+          } else {
+            console.log(`🔧 MULTI-OBJECT TRANSFORM: No updates needed for ${obj.id}`);
           }
         });
         

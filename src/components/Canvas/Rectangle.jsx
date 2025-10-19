@@ -183,7 +183,40 @@ const Rectangle = memo(({
     if (selectedObjects.length > 1 && onMultiTransform) {
       const transformData = {};
       
-      if (wasResize) {
+      console.log('🔍 RECTANGLE MULTI-TRANSFORM DEBUG:', {
+        wasResize,
+        wasRotation,
+        selectedObjectsCount: selectedObjects.length,
+        nodeData: {
+          width: node.width(),
+          height: node.height(),
+          x: node.x(),
+          y: node.y(),
+          rotation: node.rotation(),
+          scaleX: node.scaleX(),
+          scaleY: node.scaleY()
+        }
+      });
+      
+      if (wasRotation) {
+        // PRIORITIZE ROTATION: Apply rotation with snap-to-grid - EXCLUDE ALL SIZE DATA
+        transformData.rotation = Math.round(rotation / 15) * 15; // Snap to 15° increments
+        // Explicitly exclude: width, height, x, y, scaleX, scaleY for rotation operations
+        
+        console.log('🔍 RECTANGLE ROTATION DATA (PRIORITIZED):', {
+          originalRotation: rotation,
+          snappedRotation: transformData.rotation,
+          transformData,
+          excludedData: {
+            width: node.width(),
+            height: node.height(),
+            x: node.x(),
+            y: node.y(),
+            scaleX: node.scaleX(),
+            scaleY: node.scaleY()
+          }
+        });
+      } else if (wasResize) {
         // Reset scale and calculate new dimensions
         node.scaleX(1);
         node.scaleY(1);
@@ -191,14 +224,26 @@ const Rectangle = memo(({
         transformData.height = Math.max(10, node.height() * scaleY);
         transformData.x = node.x();
         transformData.y = node.y();
-      } else if (wasRotation) {
-        // Apply rotation with snap-to-grid
-        transformData.rotation = Math.round(rotation / 15) * 15; // Snap to 15° increments
-        transformData.x = node.x();
-        transformData.y = node.y();
+        
+        console.log('🔍 RECTANGLE RESIZE DATA:', {
+          scaleX,
+          scaleY,
+          transformData
+        });
       }
       
+      console.log('🔍 RECTANGLE FINAL TRANSFORM DATA:', {
+        transformData,
+        keys: Object.keys(transformData),
+        isEmpty: Object.keys(transformData).length === 0
+      });
+      
       if (Object.keys(transformData).length > 0) {
+        console.log('🔍 RECTANGLE CALLING onMultiTransform with:', {
+          selectedObjects: selectedObjects.map(obj => ({ id: obj.id, type: obj.type })),
+          transformData,
+          isFinal: true
+        });
         onMultiTransform(selectedObjects, transformData, true); // true indicates final position
       }
     } else {
