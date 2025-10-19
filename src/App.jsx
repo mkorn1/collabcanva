@@ -15,9 +15,17 @@ import DarkModeToggle from './components/Layout/DarkModeToggle'
 // Import Canvas component
 import Canvas from './components/Canvas/Canvas'
 
+// Import AI Agent Panel
+import AIAgentPanel from './components/AI/AIAgentPanel'
+
 // Main App content (shown when authenticated)
 function MainApp() {
   const { user, signOut } = useAuth()
+  
+  // AI Agent Panel state
+  const [aiPanelOpen, setAiPanelOpen] = useState(false)
+  const [aiMessages, setAiMessages] = useState([])
+  const [aiLoading, setAiLoading] = useState(false)
 
   const handleSignOut = async () => {
     try {
@@ -25,6 +33,32 @@ function MainApp() {
     } catch (error) {
       console.error('Sign out failed:', error.message)
     }
+  }
+
+  const handleAiSendMessage = (message) => {
+    // Add user message
+    const userMessage = {
+      role: 'user',
+      content: message,
+      timestamp: new Date()
+    }
+    setAiMessages(prev => [...prev, userMessage])
+    
+    // For now, just add a placeholder AI response
+    setAiLoading(true)
+    setTimeout(() => {
+      const aiMessage = {
+        role: 'assistant',
+        content: `I received your message: "${message}". The AI integration is not yet connected, but the UI is working!`,
+        timestamp: new Date()
+      }
+      setAiMessages(prev => [...prev, aiMessage])
+      setAiLoading(false)
+    }, 1000)
+  }
+
+  const handleToggleAiPanel = (isOpen) => {
+    setAiPanelOpen(isOpen)
   }
 
   return (
@@ -62,6 +96,16 @@ function MainApp() {
       <div className="canvas-container">
         <Canvas />
       </div>
+
+      {/* AI Agent Panel */}
+      <AIAgentPanel
+        isVisible={true}
+        isOpen={aiPanelOpen}
+        messages={aiMessages}
+        isLoading={aiLoading}
+        onSendMessage={handleAiSendMessage}
+        onTogglePanel={handleToggleAiPanel}
+      />
     </div>
   )
 }
