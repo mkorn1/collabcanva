@@ -12,6 +12,7 @@ import { useCanvasEvents } from '../../hooks/useCanvasEvents.js';
 import { useCanvasTools } from '../../hooks/useCanvasTools.js';
 import { useCanvasViewport } from '../../hooks/useCanvasViewport.js';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts.js';
+import { performanceMonitor, withPerformanceMonitoring } from '../../utils/performanceMonitor.js';
 import CursorLayer from '../Collaboration/CursorLayer.jsx';
 import Toolbox from './Toolbox.jsx';
 import Rectangle from './Rectangle.jsx';
@@ -20,6 +21,53 @@ import Text from './Text.jsx';
 import TextFormattingPanel from './TextFormattingPanel.jsx';
 import ColorPicker from './ColorPicker.jsx';
 import DeletionWarning from './DeletionWarning.jsx';
+
+// Performance Stats Component for Development
+const PerformanceStats = () => {
+  const [stats, setStats] = useState({ fps: 0, avgOperationTime: '0.00', totalOperations: 0, slowOperations: 0, isHealthy: true });
+
+  useEffect(() => {
+    const updateStats = (data) => {
+      setStats(performanceMonitor.getStats());
+    };
+
+    performanceMonitor.addCallback(updateStats);
+    
+    // Update stats every second
+    const interval = setInterval(() => {
+      setStats(performanceMonitor.getStats());
+    }, 1000);
+
+    return () => {
+      performanceMonitor.removeCallback(updateStats);
+      clearInterval(interval);
+    };
+  }, []);
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: '50px',
+        right: '10px',
+        padding: '8px 12px',
+        backgroundColor: stats.isHealthy ? '#28a745' : '#dc3545',
+        color: 'white',
+        border: 'none',
+        borderRadius: '4px',
+        zIndex: 1000,
+        fontSize: '11px',
+        fontFamily: 'monospace',
+        minWidth: '120px'
+      }}
+    >
+      <div>FPS: {stats.fps}</div>
+      <div>Avg: {stats.avgOperationTime}ms</div>
+      <div>Ops: {stats.totalOperations}</div>
+      {stats.slowOperations > 0 && <div>Slow: {stats.slowOperations}</div>}
+    </div>
+  );
+};
 
 const Canvas = () => {
   // Get current authenticated user FIRST
@@ -83,6 +131,26 @@ const Canvas = () => {
     isCreatingText,
     cancelCreatingShape
   });
+
+  // Initialize performance monitoring
+  useEffect(() => {
+    console.log('🔧 PERFORMANCE MONITOR: Initializing transform operation monitoring');
+    performanceMonitor.startMonitoring();
+    
+    // Add performance callback for debugging
+    const performanceCallback = (data) => {
+      if (data.fps < 60) {
+        console.warn(`⚠️ PERFORMANCE ALERT: FPS dropped to ${data.fps}`);
+      }
+    };
+    
+    performanceMonitor.addCallback(performanceCallback);
+    
+    return () => {
+      performanceMonitor.removeCallback(performanceCallback);
+      performanceMonitor.stopMonitoring();
+    };
+  }, []);
   const {
     handleDragStart,
     handleDragEnd,
@@ -157,32 +225,60 @@ const Canvas = () => {
     }
   }, [updateObject]);
 
-  // Handle rectangle transform (resize/rotate)
-  const handleRectangleTransform = useCallback(async (rectangleId, transformData) => {
+  // Handle rectangle resize (debounced sync) with performance monitoring
+  const handleRectangleResize = useCallback(withPerformanceMonitoring('rectangleResize', async (rectangleId, resizeData) => {
+    console.log('🎯 CANVAS RECTANGLE RESIZE:', { rectangleId, resizeData });
+    try {
+      await updateObject(rectangleId, resizeData);
+    } catch (error) {
+      console.error('Failed to resize rectangle:', error);
+    }
+  }), [updateObject]);
+
+  // Handle rectangle transform (rotation only - immediate sync) with performance monitoring
+  const handleRectangleTransform = useCallback(withPerformanceMonitoring('rectangleTransform', async (rectangleId, transformData) => {
     try {
       await updateObject(rectangleId, transformData);
     } catch (error) {
       console.error('Failed to transform rectangle:', error);
     }
-  }, [updateObject]);
+  }), [updateObject]);
 
-  // Handle circle transform (resize/rotate)
-  const handleCircleTransform = useCallback(async (circleId, transformData) => {
+  // Handle circle resize (debounced sync) with performance monitoring
+  const handleCircleResize = useCallback(withPerformanceMonitoring('circleResize', async (circleId, resizeData) => {
+    try {
+      await updateObject(circleId, resizeData);
+    } catch (error) {
+      console.error('Failed to resize circle:', error);
+    }
+  }), [updateObject]);
+
+  // Handle text resize (debounced sync) with performance monitoring
+  const handleTextResize = useCallback(withPerformanceMonitoring('textResize', async (textId, resizeData) => {
+    try {
+      await updateObject(textId, resizeData);
+    } catch (error) {
+      console.error('Failed to resize text:', error);
+    }
+  }), [updateObject]);
+
+  // Handle circle transform (rotation only - immediate sync) with performance monitoring
+  const handleCircleTransform = useCallback(withPerformanceMonitoring('circleTransform', async (circleId, transformData) => {
     try {
       await updateObject(circleId, transformData);
     } catch (error) {
       console.error('Failed to transform circle:', error);
     }
-  }, [updateObject]);
+  }), [updateObject]);
 
-  // Handle text transform (resize/rotate)
-  const handleTextTransform = useCallback(async (textId, transformData) => {
+  // Handle text transform (rotation only - immediate sync) with performance monitoring
+  const handleTextTransform = useCallback(withPerformanceMonitoring('textTransform', async (textId, transformData) => {
     try {
       await updateObject(textId, transformData);
     } catch (error) {
       console.error('Failed to transform text:', error);
     }
-  }, [updateObject]);
+  }), [updateObject]);
 
   // Handle text editing (content and formatting)
   const handleTextEdit = useCallback(async (textId, updates) => {
@@ -251,6 +347,95 @@ const Canvas = () => {
     }
   }, [updateObject]);
 
+  // Handle multi-object transform operations (resize and rotation) with performance monitoring
+  const handleMultiObjectTransform = useCallback(withPerformanceMonitoring('multiObjectTransform', async (selectedObjectsParam, transformData, isFinal = false) => {
+    try {
+      console.log('🔧 MULTI-OBJECT TRANSFORM:', {
+        selectedObjects: selectedObjectsParam.length,
+        transformData,
+        isFinal
+      });
+
+      if (!isFinal) {
+        // Intermediate transform - skip Firestore updates for performance
+        console.log('🔧 MULTI-OBJECT TRANSFORM: Skipping intermediate updates for performance');
+        return;
+      }
+
+      // Batch size for optimal performance (adjust based on testing)
+      const BATCH_SIZE = 5;
+      const batches = [];
+      
+      // Split objects into batches
+      for (let i = 0; i < selectedObjectsParam.length; i += BATCH_SIZE) {
+        batches.push(selectedObjectsParam.slice(i, i + BATCH_SIZE));
+      }
+
+      console.log(`🔧 MULTI-OBJECT TRANSFORM: Processing ${selectedObjectsParam.length} objects in ${batches.length} batches`);
+
+      // Process each batch sequentially to avoid overwhelming Firestore
+      for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+        const batch = batches[batchIndex];
+        console.log(`🔧 MULTI-OBJECT TRANSFORM: Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} objects)`);
+        
+        // Process objects in current batch in parallel
+        const batchPromises = batch.map(async (obj) => {
+          const updates = {};
+          
+          // Handle position changes (if any)
+          if (transformData.deltaX !== undefined && transformData.deltaY !== undefined) {
+            updates.x = obj.x + transformData.deltaX;
+            updates.y = obj.y + transformData.deltaY;
+          }
+          
+          // Handle rotation changes (if any)
+          if (transformData.rotation !== undefined) {
+            updates.rotation = transformData.rotation;
+          }
+          
+          // Handle scale changes (if any)
+          if (transformData.scaleX !== undefined) {
+            updates.scaleX = transformData.scaleX;
+          }
+          if (transformData.scaleY !== undefined) {
+            updates.scaleY = transformData.scaleY;
+          }
+          
+          // Handle size changes (if any)
+          if (transformData.width !== undefined) {
+            updates.width = transformData.width;
+          }
+          if (transformData.height !== undefined) {
+            updates.height = transformData.height;
+          }
+          
+          // Handle text-specific properties
+          if (transformData.fontSize !== undefined) {
+            updates.fontSize = transformData.fontSize;
+          }
+          
+          // Apply updates if any exist
+          if (Object.keys(updates).length > 0) {
+            await updateObject(obj.id, updates);
+            console.log(`🔧 MULTI-OBJECT TRANSFORM: Updated object ${obj.id}`, updates);
+          }
+        });
+        
+        // Wait for current batch to complete before starting next batch
+        await Promise.all(batchPromises);
+        
+        // Small delay between batches to prevent overwhelming Firestore
+        if (batchIndex < batches.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 10)); // 10ms delay
+        }
+      }
+      
+      console.log('🔧 MULTI-OBJECT TRANSFORM: All batches completed successfully');
+    } catch (error) {
+      console.error('Failed to transform multiple objects:', error);
+    }
+  }), [updateObject]);
+
 
 
   return (
@@ -292,8 +477,10 @@ const Canvas = () => {
                   onSelect={handleRectangleSelect}
                   onMove={handleRectangleMove}
                   onTransform={handleRectangleTransform}
+                  onResize={handleRectangleResize}
                   selectedObjects={selectedObjects}
                   onMultiMove={handleMultiObjectMove}
+                  onMultiTransform={handleMultiObjectTransform}
                 />
               );
             } else if (obj.type === 'circle') {
@@ -305,8 +492,10 @@ const Canvas = () => {
                   onSelect={handleRectangleSelect} // Same selection logic
                   onMove={handleRectangleMove} // Same move logic
                   onTransform={handleCircleTransform}
+                  onResize={handleCircleResize}
                   selectedObjects={selectedObjects}
                   onMultiMove={handleMultiObjectMove}
+                  onMultiTransform={handleMultiObjectTransform}
                 />
               );
             } else if (obj.type === 'text') {
@@ -319,8 +508,10 @@ const Canvas = () => {
                   onMove={handleRectangleMove} // Same move logic
                   onEdit={handleTextEdit} // Text-specific editing
                   onTransform={handleTextTransform}
+                  onResize={handleTextResize}
                   selectedObjects={selectedObjects}
                   onMultiMove={handleMultiObjectMove}
+                  onMultiTransform={handleMultiObjectTransform}
                 />
               );
             }
@@ -474,6 +665,11 @@ const Canvas = () => {
         >
           🧪 Test Tooltip
         </button>
+      )}
+
+      {/* PERFORMANCE MONITORING DISPLAY */}
+      {process.env.NODE_ENV === 'development' && (
+        <PerformanceStats />
       )}
     </div>
   );

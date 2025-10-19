@@ -11,9 +11,11 @@ const Text = memo(({
   onSelect,
   onMove,
   onEdit,
-  onTransform, // Function to handle transform operations
+  onTransform, // Function to handle transform operations (rotation)
+  onResize, // Function to handle resize operations
   selectedObjects = [], // Array of all selected objects for coordinated dragging
-  onMultiMove // Function to handle multi-object movement
+  onMultiMove, // Function to handle multi-object movement
+  onMultiTransform // Function to handle multi-object transform operations
 }) => {
   // Track drag start position for multi-object movement
   const dragStartPosRef = useRef(null);
@@ -238,34 +240,72 @@ const Text = memo(({
     dragStartPosRef.current = null;
   };
 
-  // Handle transform end - update text properties
+  // Handle transform end - detect resize vs rotation and update properties
   const handleTransformEnd = (e) => {
     const node = textRef.current;
     const scaleX = node.scaleX();
     const scaleY = node.scaleY();
     const rotation = node.rotation();
+    const oldRotation = text.rotation || 0;
 
-    // Reset scale and update width/fontSize
-    node.scaleX(1);
-    node.scaleY(1);
-    
-    if (onTransform) {
-      // Use onTransform for resize and rotation operations
-      onTransform(text.id, {
-        x: node.x(),
-        y: node.y(),
-        width: Math.max(5, node.width() * scaleX),
-        fontSize: Math.max(8, (text.fontSize || 16) * scaleY),
-        rotation: Math.round(rotation / 15) * 15 // Snap to 15° increments
-      });
-    } else if (onEdit) {
-      // Fallback to onEdit for resize only (backward compatibility)
-      onEdit(text.id, {
-        x: node.x(),
-        y: node.y(),
-        width: Math.max(5, node.width() * scaleX),
-        fontSize: Math.max(8, (text.fontSize || 16) * scaleY),
-      });
+    // Detect if this was a resize operation (scale changed) or rotation operation
+    const wasResize = scaleX !== 1 || scaleY !== 1;
+    const wasRotation = Math.abs(rotation - oldRotation) > 0.1; // Small tolerance for floating point
+
+    console.log('🔧 TEXT TRANSFORM:', {
+      id: text.id,
+      scaleX,
+      scaleY,
+      rotation,
+      oldRotation,
+      wasResize,
+      wasRotation,
+      isMultiSelect: selectedObjects.length > 1
+    });
+
+    // Check if multiple objects are selected for coordinated transform
+    if (selectedObjects.length > 1 && onMultiTransform) {
+      const transformData = {};
+      
+      if (wasResize) {
+        // Reset scale and calculate new dimensions
+        node.scaleX(1);
+        node.scaleY(1);
+        transformData.width = Math.max(5, node.width() * scaleX);
+        transformData.fontSize = Math.max(8, (text.fontSize || 16) * scaleY);
+        transformData.x = node.x();
+        transformData.y = node.y();
+      } else if (wasRotation) {
+        // Apply rotation with snap-to-grid
+        transformData.rotation = Math.round(rotation / 15) * 15; // Snap to 15° increments
+        transformData.x = node.x();
+        transformData.y = node.y();
+      }
+      
+      if (Object.keys(transformData).length > 0) {
+        onMultiTransform(selectedObjects, transformData, true); // true indicates final position
+      }
+    } else {
+      // Single object transform - use existing logic
+      if (wasResize && onResize) {
+        // Reset scale and update size properties
+        node.scaleX(1);
+        node.scaleY(1);
+        
+        onResize(text.id, {
+          x: node.x(),
+          y: node.y(),
+          width: Math.max(5, node.width() * scaleX),
+          fontSize: Math.max(8, (text.fontSize || 16) * scaleY)
+        });
+      } else if (wasRotation && onTransform) {
+        // Update rotation only
+        onTransform(text.id, {
+          x: node.x(),
+          y: node.y(),
+          rotation: Math.round(rotation / 15) * 15 // Snap to 15° increments
+        });
+      }
     }
   };
 
@@ -367,7 +407,7 @@ const Text = memo(({
             }
             return newBox;
           }}
-          enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right']}
+          enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right']} // Enable resize anchors
           rotateEnabled={true}
           keepRatio={false}
           onTransformEnd={handleTransformEnd}

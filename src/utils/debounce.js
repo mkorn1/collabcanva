@@ -56,8 +56,10 @@ export class WriteQueue {
    * Queue an update for an object
    * @param {string} objectId - Object ID to update
    * @param {Object} updates - Update data to apply
+   * @param {number} customDelay - Custom debounce delay (optional)
    */
-  queueUpdate(objectId, updates) {
+  queueUpdate(objectId, updates, customDelay = null) {
+    console.log('🔧 WRITEQUEUE QUEUE:', objectId, 'updates:', updates, 'delay:', customDelay || this.debounceDelay);
     // Merge with any existing pending updates for this object
     const existing = this.pendingWrites.get(objectId) || {};
     const merged = {
@@ -69,6 +71,11 @@ export class WriteQueue {
     };
     
     this.pendingWrites.set(objectId, merged);
+    console.log('🔧 WRITEQUEUE MERGED:', objectId, 'merged:', merged);
+    
+    // For now, ignore custom delay and always use the default debounce
+    // This ensures consistent behavior and prevents multiple debounced functions
+    console.log('🔧 WRITEQUEUE: Using default debounce delay:', this.debounceDelay);
     
     // Trigger debounced flush
     this.debouncedFlush();
@@ -88,6 +95,11 @@ export class WriteQueue {
   async _flush() {
     if (this.pendingWrites.size === 0) {
       return;
+    }
+    
+    console.log('🔧 WRITEQUEUE FLUSHING:', this.pendingWrites.size, 'writes');
+    for (const [objectId, updates] of this.pendingWrites) {
+      console.log('🔧 WRITEQUEUE FLUSH:', objectId, 'updates:', updates);
     }
     
     // Copy and clear the queue

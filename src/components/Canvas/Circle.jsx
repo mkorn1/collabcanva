@@ -1,9 +1,10 @@
 import React, { memo, useRef, useState, useEffect } from 'react';
-import { Circle as KonvaCircle, Group, Rect, Text as KonvaText, Transformer } from 'react-konva';
+import { Ellipse, Group, Rect, Text as KonvaText, Transformer } from 'react-konva';
 
 /**
- * Circle component with selection and movement capabilities
+ * Circle/Ellipse component with selection and movement capabilities
  * Handles its own events to prevent bubbling to Stage
+ * Supports both circles (width = height) and ovals (width ≠ height)
  */
 const Circle = memo(({
   circle,
@@ -11,9 +12,11 @@ const Circle = memo(({
   onSelect,
   onMove,
   onDeselect,
-  onTransform, // Function to handle transform operations
+  onTransform, // Function to handle transform operations (rotation)
+  onResize, // Function to handle resize operations
   selectedObjects = [], // Array of all selected objects for coordinated dragging
-  onMultiMove // Function to handle multi-object movement
+  onMultiMove, // Function to handle multi-object movement
+  onMultiTransform // Function to handle multi-object transform operations
 }) => {
   // Track drag start position for multi-object movement
   const dragStartPosRef = useRef(null);
@@ -151,24 +154,76 @@ const Circle = memo(({
     setShowLastEditor(false);
   };
 
-  // Handle transform end - update circle properties
+  // Handle transform end - detect resize vs rotation and update properties
   const handleTransformEnd = (e) => {
     const node = circleRef.current;
     const scaleX = node.scaleX();
     const scaleY = node.scaleY();
     const rotation = node.rotation();
+    const oldRotation = circle.rotation || 0;
 
-    // Reset scale and update properties
-    node.scaleX(1);
-    node.scaleY(1);
-    
-    if (onTransform) {
-      onTransform(circle.id, {
-        x: node.x(),
-        y: node.y(),
-        radius: Math.max(5, node.radius() * Math.min(scaleX, scaleY)), // Use minimum scale for uniform circle
-        rotation: Math.round(rotation / 15) * 15 // Snap to 15° increments
-      });
+    // Detect if this was a resize operation (scale changed) or rotation operation
+    const wasResize = scaleX !== 1 || scaleY !== 1;
+    const wasRotation = Math.abs(rotation - oldRotation) > 0.1; // Small tolerance for floating point
+
+    console.log('🔧 CIRCLE TRANSFORM:', {
+      id: circle.id,
+      scaleX,
+      scaleY,
+      rotation,
+      oldRotation,
+      wasResize,
+      wasRotation,
+      currentWidth: circle.width,
+      currentHeight: circle.height,
+      newWidth: Math.max(10, node.width() * scaleX),
+      newHeight: Math.max(10, node.height() * scaleY),
+      isMultiSelect: selectedObjects.length > 1
+    });
+
+    // Check if multiple objects are selected for coordinated transform
+    if (selectedObjects.length > 1 && onMultiTransform) {
+      const transformData = {};
+      
+      if (wasResize) {
+        // Reset scale and calculate new dimensions
+        node.scaleX(1);
+        node.scaleY(1);
+        transformData.width = Math.max(10, node.width() * scaleX);
+        transformData.height = Math.max(10, node.height() * scaleY);
+        transformData.x = node.x();
+        transformData.y = node.y();
+      } else if (wasRotation) {
+        // Apply rotation with snap-to-grid
+        transformData.rotation = Math.round(rotation / 15) * 15; // Snap to 15° increments
+        transformData.x = node.x();
+        transformData.y = node.y();
+      }
+      
+      if (Object.keys(transformData).length > 0) {
+        onMultiTransform(selectedObjects, transformData, true); // true indicates final position
+      }
+    } else {
+      // Single object transform - use existing logic
+      if (wasResize && onResize) {
+        // Reset scale and update size properties
+        node.scaleX(1);
+        node.scaleY(1);
+        
+        onResize(circle.id, {
+          x: node.x(),
+          y: node.y(),
+          width: Math.max(10, node.width() * scaleX),
+          height: Math.max(10, node.height() * scaleY)
+        });
+      } else if (wasRotation && onTransform) {
+        // Update rotation only
+        onTransform(circle.id, {
+          x: node.x(),
+          y: node.y(),
+          rotation: Math.round(rotation / 15) * 15 // Snap to 15° increments
+        });
+      }
     }
   };
 
@@ -201,13 +256,14 @@ const Circle = memo(({
 
   return (
     <Group>
-      {/* Main circle */}
-      <KonvaCircle
+      {/* Main circle/ellipse */}
+      <Ellipse
         ref={circleRef}
-        // Circle properties
+        // Ellipse properties
         x={circle.x}
         y={circle.y}
-        radius={circle.radius}
+        radiusX={circle.width ? circle.width / 2 : circle.radius || 25}
+        radiusY={circle.height ? circle.height / 2 : circle.radius || 25}
         rotation={circle.rotation || 0}
         fill={circle.fill}
         stroke={isSelected ? '#0066ff' : (showLastEditor ? lastEditorInfo?.color || '#ff6b6b' : circle.stroke)}
@@ -238,8 +294,8 @@ const Circle = memo(({
       {/* Last editor tooltip */}
       {showLastEditor && lastEditorInfo && (
         <Group
-          x={circle.x + circle.radius + 10}
-          y={circle.y - circle.radius}
+          x={circle.x + (circle.width ? circle.width / 2 : circle.radius || 25) + 10}
+          y={circle.y - (circle.height ? circle.height / 2 : circle.radius || 25)}
         >
           {/* Tooltip background */}
           <Rect
@@ -273,7 +329,7 @@ const Circle = memo(({
             }
             return newBox;
           }}
-          enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right']}
+          enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right']} // Enable resize anchors
           rotateEnabled={true}
           keepRatio={false}
           onTransformEnd={handleTransformEnd}

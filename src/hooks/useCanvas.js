@@ -35,9 +35,13 @@ export const useCanvas = (canvasId = 'main', user = null) => {
   
   // Helper function to compare transform data with floating-point tolerance
   const _isSameTransformData = (localObj, remoteObj) => {
-    const tolerance = 0.01; // Increased tolerance for floating-point differences (1 pixel)
+    const tolerance = 0.01; // Base tolerance for floating-point differences (1 pixel)
+    const resizeTolerance = 5.0; // Higher tolerance for resize operations (5 pixels)
     
-    const compareFloat = (a, b) => Math.abs(a - b) < tolerance;
+    const compareFloat = (a, b, isResizeProperty = false) => {
+      const effectiveTolerance = isResizeProperty ? resizeTolerance : tolerance;
+      return Math.abs(a - b) < effectiveTolerance;
+    };
     
     // Log the differences for debugging
     const differences = {
@@ -53,11 +57,11 @@ export const useCanvas = (canvasId = 'main', user = null) => {
     const isSame = (
       compareFloat(localObj.x || 0, remoteObj.x || 0) &&
       compareFloat(localObj.y || 0, remoteObj.y || 0) &&
-      compareFloat(localObj.width || 0, remoteObj.width || 0) &&
-      compareFloat(localObj.height || 0, remoteObj.height || 0) &&
-      compareFloat(localObj.radius || 0, remoteObj.radius || 0) &&
-      compareFloat(localObj.fontSize || 0, remoteObj.fontSize || 0) &&
-      compareFloat(localObj.rotation || 0, remoteObj.rotation || 0)
+      compareFloat(localObj.width || 0, remoteObj.width || 0, true) && // Resize property
+      compareFloat(localObj.height || 0, remoteObj.height || 0, true) && // Resize property
+      compareFloat(localObj.radius || 0, remoteObj.radius || 0, true) && // Resize property
+      compareFloat(localObj.fontSize || 0, remoteObj.fontSize || 0, true) && // Resize property
+      compareFloat(localObj.rotation || 0, remoteObj.rotation || 0) // Rotation uses base tolerance
     );
     
     if (!isSame) {
@@ -164,7 +168,7 @@ export const useCanvas = (canvasId = 'main', user = null) => {
         }
         
         await Promise.allSettled(promises);
-      }, 50); // 50ms debounce delay (below 100ms requirement)
+      }, 200); // 200ms debounce delay for resize operations
     }
     
     return () => {
@@ -198,6 +202,7 @@ export const useCanvas = (canvasId = 'main', user = null) => {
       }
 
       // Apply optimistic update locally for immediate feedback
+      console.log('🔧 OPTIMISTIC UPDATE:', objectId, 'updates:', updates);
       setObjects(prev => prev.map(obj => 
         obj.id === objectId 
           ? { 
@@ -212,16 +217,38 @@ export const useCanvas = (canvasId = 'main', user = null) => {
           : obj
       ));
 
-      // Check if this is a transform operation (resize/rotate)
-      const isTransformOperation = updates.rotation !== undefined || 
-                                  updates.width !== undefined || 
-                                  updates.height !== undefined || 
-                                  updates.radius !== undefined || 
-                                  updates.fontSize !== undefined;
+      // Check if this is a rotation operation (immediate sync)
+      const isRotationOperation = updates.rotation !== undefined;
       
-      if (isTransformOperation) {
-        // Transform operations: use direct update for immediate sync
+      // Check if this is a resize operation (debounced sync)
+      const isResizeOperation = updates.width !== undefined || 
+                               updates.height !== undefined || 
+                               updates.radius !== undefined || 
+                               updates.fontSize !== undefined;
+      
+      console.log('🔍 UPDATE DETECTION:', {
+        objectId,
+        updates,
+        isRotationOperation,
+        isResizeOperation,
+        hasWriteQueue: !!writeQueueRef.current
+      });
+      
+      if (isRotationOperation) {
+        // Rotation operations: use direct update for immediate sync
         await updateObjectInFirestore(canvasId, objectId, updates, options);
+      } else if (isResizeOperation) {
+        // Resize operations: use write queue with longer debounce to prevent rapid updates
+        console.log('🔧 RESIZE OPERATION - writeQueueRef.current:', !!writeQueueRef.current);
+        if (writeQueueRef.current) {
+          // For resize operations, use write queue with longer debounce
+          console.log('🔧 USING WRITEQUEUE for resize');
+          writeQueueRef.current.queueUpdate(objectId, updates);
+        } else {
+          // Fallback to direct update if write queue not available
+          console.log('🔧 WRITEQUEUE NOT AVAILABLE - using direct update');
+          await updateObjectInFirestore(canvasId, objectId, updates, options);
+        }
       } else {
         // Other operations: use write queue for debounced updates
         if (writeQueueRef.current) {
@@ -443,24 +470,32 @@ export const useCanvas = (canvasId = 'main', user = null) => {
             
             // Apply conflict resolution
             if (localObj && localObj._isOptimistic) {
+              console.log('🔧 CONFLICT RESOLUTION:', remoteObj.id);
+              console.log('🔧 LOCAL OBJ:', localObj);
+              console.log('🔧 REMOTE OBJ:', remoteObj);
+              
               // Check if this is the same user's update (avoid self-conflict)
               if (localObj.lastModifiedBy === remoteObj.lastModifiedBy) {
                 // Same user - check if the data is essentially the same (with floating-point tolerance)
                 const isSameData = _isSameTransformData(localObj, remoteObj);
+                console.log('🔧 SAME USER - isSameData:', isSameData);
                 
                 if (isSameData) {
                   // Same user, same data - use remote object (it has server timestamp)
+                  console.log('🔧 USING REMOTE (same data)');
                   const { _isOptimistic, ...cleanRemote } = remoteObj;
                   return cleanRemote;
                 } else {
-                  // Same user, different data - this shouldn't happen, but use remote
+                  // Same user, different data - prefer local object (it's more recent)
+                  console.log('🔧 USING LOCAL (different data)');
                   console.warn('Same user but different data detected:', { localObj, remoteObj });
-                  const { _isOptimistic, ...cleanRemote } = remoteObj;
-                  return cleanRemote;
+                  const { _isOptimistic, ...cleanLocal } = localObj;
+                  return cleanLocal;
                 }
               }
               
               // Different user - apply conflict resolution
+              console.log('🔧 DIFFERENT USER - using ConflictResolver');
               const resolved = ConflictResolver.resolve(localObj, remoteObj);
               
               // Remove optimistic flag from resolved object
@@ -683,7 +718,8 @@ export const useCanvas = (canvasId = 'main', user = null) => {
       type: 'circle',
       x: canvasPoint.x,
       y: canvasPoint.y,
-      radius: 0,
+      width: 0,
+      height: 0,
       fill: userColor,
       stroke: userColor,
       strokeWidth: 2,
@@ -704,16 +740,23 @@ export const useCanvas = (canvasId = 'main', user = null) => {
     const canvasPoint = screenToCanvas(currentPoint, stageRef.current);
     const start = dragStartRef.current;
     
-    // Calculate radius as distance from center to current point
-    const deltaX = canvasPoint.x - start.x;
-    const deltaY = canvasPoint.y - start.y;
-    const radius = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    // Calculate width and height from center to current point
+    const deltaX = Math.abs(canvasPoint.x - start.x);
+    const deltaY = Math.abs(canvasPoint.y - start.y);
     
-    // Update preview circle
+    // Update preview circle with width/height
     const updatedCircle = {
       ...currentCircle,
-      radius: radius
+      width: deltaX * 2, // Total width
+      height: deltaY * 2 // Total height
     };
+    
+    console.log('🔵 CIRCLE CREATION UPDATE:', {
+      deltaX,
+      deltaY,
+      width: deltaX * 2,
+      height: deltaY * 2
+    });
     
     setCurrentCircle(updatedCircle);
   }, [isCreatingCircle, currentCircle]);
@@ -730,10 +773,10 @@ export const useCanvas = (canvasId = 'main', user = null) => {
       return null;
     }
     
-    const MIN_CIRCLE_RADIUS = 5;
+    const MIN_CIRCLE_SIZE = 10;
     
     // Only create circle if it has meaningful size
-    if (currentCircle.radius < MIN_CIRCLE_RADIUS) {
+    if (currentCircle.width < MIN_CIRCLE_SIZE || currentCircle.height < MIN_CIRCLE_SIZE) {
       cancelCircleCreation();
       return null;
     }

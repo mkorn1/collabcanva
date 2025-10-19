@@ -421,6 +421,7 @@ export async function createObject(canvasId, objectData) {
  */
 export async function updateObject(canvasId, objectId, updates, options = {}) {
   try {
+    console.log('🔧 FIRESTORE UPDATE:', objectId, 'updates:', updates);
     const objectRef = doc(db, CANVAS_COLLECTION, canvasId, OBJECTS_COLLECTION, objectId);
     
     // Get current user info from auth
@@ -438,12 +439,10 @@ export async function updateObject(canvasId, objectId, updates, options = {}) {
       lastModifiedByName: userName
     };
     
-    // Add transform-specific metadata if transform properties are being updated
-    const isTransformUpdate = updates.rotation !== undefined || 
-                             updates.scaleX !== undefined || 
-                             updates.scaleY !== undefined;
+    // Add transform-specific metadata if rotation properties are being updated
+    const isRotationUpdate = updates.rotation !== undefined;
     
-    if (isTransformUpdate) {
+    if (isRotationUpdate) {
       updateData.lastTransformBy = userId;
       updateData.lastTransformByName = userName;
       updateData.lastTransformAt = serverTimestamp();

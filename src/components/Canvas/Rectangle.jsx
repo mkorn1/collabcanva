@@ -11,9 +11,11 @@ const Rectangle = memo(({
   onSelect,
   onMove,
   onDeselect,
-  onTransform, // Function to handle transform operations
+  onTransform, // Function to handle transform operations (rotation)
+  onResize, // Function to handle resize operations
   selectedObjects = [], // Array of all selected objects for coordinated dragging
-  onMultiMove // Function to handle multi-object movement
+  onMultiMove, // Function to handle multi-object movement
+  onMultiTransform // Function to handle multi-object transform operations
 }) => {
   // Track drag start position for multi-object movement
   const dragStartPosRef = useRef(null);
@@ -23,6 +25,9 @@ const Rectangle = memo(({
   // Visual feedback state for conflict resolution
   const [showLastEditor, setShowLastEditor] = useState(false);
   const [lastEditorInfo, setLastEditorInfo] = useState(null);
+  
+  // Track Shift key state for aspect ratio preservation
+  const [isShiftPressed, setIsShiftPressed] = useState(false);
   
   // Handle mouse down to prevent stage drag
   const handleMouseDown = (e) => {
@@ -151,25 +156,72 @@ const Rectangle = memo(({
     setShowLastEditor(false);
   };
 
-  // Handle transform end - update rectangle properties
+  // Handle transform end - detect resize vs rotation and update properties
   const handleTransformEnd = (e) => {
     const node = rectRef.current;
     const scaleX = node.scaleX();
     const scaleY = node.scaleY();
     const rotation = node.rotation();
+    const oldRotation = rectangle.rotation || 0;
 
-    // Reset scale and update properties
-    node.scaleX(1);
-    node.scaleY(1);
-    
-    if (onTransform) {
-      onTransform(rectangle.id, {
-        x: node.x(),
-        y: node.y(),
-        width: Math.max(10, node.width() * scaleX),
-        height: Math.max(10, node.height() * scaleY),
-        rotation: Math.round(rotation / 15) * 15 // Snap to 15° increments
-      });
+    // Detect if this was a resize operation (scale changed) or rotation operation
+    const wasResize = scaleX !== 1 || scaleY !== 1;
+    const wasRotation = Math.abs(rotation - oldRotation) > 0.1; // Small tolerance for floating point
+
+    console.log('🔧 RECTANGLE TRANSFORM:', {
+      id: rectangle.id,
+      scaleX,
+      scaleY,
+      rotation,
+      oldRotation,
+      wasResize,
+      wasRotation,
+      isMultiSelect: selectedObjects.length > 1
+    });
+
+    // Check if multiple objects are selected for coordinated transform
+    if (selectedObjects.length > 1 && onMultiTransform) {
+      const transformData = {};
+      
+      if (wasResize) {
+        // Reset scale and calculate new dimensions
+        node.scaleX(1);
+        node.scaleY(1);
+        transformData.width = Math.max(10, node.width() * scaleX);
+        transformData.height = Math.max(10, node.height() * scaleY);
+        transformData.x = node.x();
+        transformData.y = node.y();
+      } else if (wasRotation) {
+        // Apply rotation with snap-to-grid
+        transformData.rotation = Math.round(rotation / 15) * 15; // Snap to 15° increments
+        transformData.x = node.x();
+        transformData.y = node.y();
+      }
+      
+      if (Object.keys(transformData).length > 0) {
+        onMultiTransform(selectedObjects, transformData, true); // true indicates final position
+      }
+    } else {
+      // Single object transform - use existing logic
+      if (wasResize && onResize) {
+        // Reset scale and update size properties
+        node.scaleX(1);
+        node.scaleY(1);
+        
+        onResize(rectangle.id, {
+          x: node.x(),
+          y: node.y(),
+          width: Math.max(10, node.width() * scaleX),
+          height: Math.max(10, node.height() * scaleY)
+        });
+      } else if (wasRotation && onTransform) {
+        // Update rotation only
+        onTransform(rectangle.id, {
+          x: node.x(),
+          y: node.y(),
+          rotation: Math.round(rotation / 15) * 15 // Snap to 15° increments
+        });
+      }
     }
   };
 
@@ -179,6 +231,34 @@ const Rectangle = memo(({
       transformerRef.current.nodes([rectRef.current]);
       transformerRef.current.getLayer().batchDraw();
     }
+  }, [isSelected]);
+
+  // Handle Shift key events for aspect ratio preservation
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Shift' && isSelected) {
+        setIsShiftPressed(true);
+        console.log('🔧 RECTANGLE: Shift key pressed - aspect ratio preservation enabled');
+      }
+    };
+
+    const handleKeyUp = (e) => {
+      if (e.key === 'Shift') {
+        setIsShiftPressed(false);
+        console.log('🔧 RECTANGLE: Shift key released - aspect ratio preservation disabled');
+      }
+    };
+
+    // Only add listeners when rectangle is selected
+    if (isSelected) {
+      document.addEventListener('keydown', handleKeyDown);
+      document.addEventListener('keyup', handleKeyUp);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keyup', handleKeyUp);
+    };
   }, [isSelected]);
 
   // Auto-show conflict resolution feedback
@@ -275,9 +355,9 @@ const Rectangle = memo(({
             }
             return newBox;
           }}
-          enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right']}
+          enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right']} // Enable resize anchors
           rotateEnabled={true}
-          keepRatio={false}
+          keepRatio={isShiftPressed} // Preserve aspect ratio when Shift is pressed
           onTransformEnd={handleTransformEnd}
         />
       )}
@@ -287,7 +367,8 @@ const Rectangle = memo(({
   // Optimize re-renders - only update if relevant props changed
   return (
     prevProps.rectangle.updatedAt === nextProps.rectangle.updatedAt &&
-    prevProps.isSelected === nextProps.isSelected
+    prevProps.isSelected === nextProps.isSelected &&
+    prevProps.selectedObjects.length === nextProps.selectedObjects.length
   );
 });
 
