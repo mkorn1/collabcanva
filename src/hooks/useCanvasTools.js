@@ -25,7 +25,7 @@ export const useCanvasTools = ({
       setCreationMode('circle');
     } else if (toolId === 'text') {
       setCreationMode('text');
-    } else if (toolId === 'select') {
+    } else if (toolId === 'select' || toolId === 'marquee') {
       setCreationMode(null);
     }
   }, []);
@@ -41,6 +41,9 @@ export const useCanvasTools = ({
       switch (event.key.toLowerCase()) {
         case 'v':
           handleToolSelect('select');
+          break;
+        case 'm':
+          handleToolSelect('marquee');
           break;
         case 'r':
           handleToolSelect('rectangle');
@@ -65,11 +68,13 @@ export const useCanvasTools = ({
   }, [isCreatingRectangle, isCreatingCircle, isCreatingText, cancelCreatingShape, handleToolSelect]);
 
   // Update cursor based on creation mode
-  const getCursorStyle = useCallback((isDragging) => {
+  const getCursorStyle = useCallback((isDragging, selectedTool) => {
     if (creationMode === 'rectangle' || creationMode === 'circle') {
       return 'crosshair';
     } else if (creationMode === 'text') {
       return 'text';
+    } else if (selectedTool === 'marquee') {
+      return 'crosshair';
     }
     return isDragging ? 'grabbing' : 'grab';
   }, [creationMode]);

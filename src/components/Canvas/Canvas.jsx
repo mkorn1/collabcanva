@@ -91,12 +91,18 @@ const Canvas = () => {
     isCreatingCircle,
     currentText,
     isCreatingText,
+    marqueeSelection,
+    isMarqueeSelecting,
     isLoading,
     syncError,
     startCreatingShape,
     updateCreatingShape,
     finishCreatingShape,
     cancelCreatingShape,
+    startMarqueeSelection,
+    updateMarqueeSelection,
+    finishMarqueeSelection,
+    cancelMarqueeSelection,
     selectObject,
     deselectObject,
     updateObject,
@@ -173,7 +179,12 @@ const Canvas = () => {
     isCreatingCircle,
     isCreatingText,
     userCursorColor,
-    user
+    user,
+    selectedTool,
+    startMarqueeSelection,
+    updateMarqueeSelection,
+    finishMarqueeSelection,
+    isMarqueeSelecting
   });
 
   // Initialize keyboard shortcuts
@@ -480,7 +491,7 @@ const Canvas = () => {
         width: '100%',
         height: '100%',
         position: 'relative',
-        cursor: getCursorStyle(isDragging)
+        cursor: getCursorStyle(isDragging, selectedTool)
       }}
     >
       <Stage
@@ -491,7 +502,7 @@ const Canvas = () => {
         y={panPosition.y}
         scaleX={zoom}
         scaleY={zoom}
-        draggable={!isCreatingRectangle && !isCreatingCircle && !isCreatingText}
+        draggable={!isCreatingRectangle && !isCreatingCircle && !isCreatingText && !isMarqueeSelecting}
         onDragStart={handleDragStart}
         onMouseDown={handleStageMouseDown}
         onMouseMove={handleStageMouseMove}
@@ -581,6 +592,22 @@ const Canvas = () => {
               strokeWidth={currentCircle.strokeWidth}
               opacity={currentCircle.opacity}
               dash={[5, 5]} // Dashed border for preview
+            />
+          )}
+          
+          {/* Render marquee selection */}
+          {marqueeSelection && (
+            <Rect
+              key={marqueeSelection.id}
+              x={marqueeSelection.x}
+              y={marqueeSelection.y}
+              width={marqueeSelection.width}
+              height={marqueeSelection.height}
+              fill="rgba(102, 126, 234, 0.1)"
+              stroke="#667eea"
+              strokeWidth={2}
+              dash={[5, 5]}
+              listening={false}
             />
           )}
         </Layer>

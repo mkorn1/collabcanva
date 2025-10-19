@@ -19,7 +19,12 @@ export const useCanvasEvents = ({
   isCreatingCircle,
   isCreatingText,
   userCursorColor,
-  user
+  user,
+  selectedTool,
+  startMarqueeSelection,
+  updateMarqueeSelection,
+  finishMarqueeSelection,
+  isMarqueeSelecting
 }) => {
   
   // Handle drag (pan) functionality
@@ -96,8 +101,10 @@ export const useCanvasEvents = ({
     const stage = e.target.getStage();
     const pointerPos = stage.getPointerPosition();
 
-    // Deselect any selected objects when clicking empty canvas
-    deselectObject();
+    // Deselect any selected objects when clicking empty canvas (unless marquee selecting)
+    if (selectedTool !== 'marquee') {
+      deselectObject();
+    }
 
     if (creationMode === 'rectangle' && pointerPos) {
       // Start rectangle creation
@@ -117,11 +124,15 @@ export const useCanvasEvents = ({
         userColor: '#000000' // Black text by default
       });
       return; // Don't start dragging when creating
+    } else if (selectedTool === 'marquee' && pointerPos) {
+      // Start marquee selection
+      startMarqueeSelection(pointerPos);
+      return; // Don't start dragging when marquee selecting
     }
 
     // Handle normal canvas interactions (pan/drag)
     handleDragStart();
-  }, [deselectObject, creationMode, startCreatingShape, userCursorColor, handleDragStart]);
+  }, [deselectObject, creationMode, startCreatingShape, userCursorColor, handleDragStart, selectedTool, startMarqueeSelection]);
 
   // Handle mouse move for creation
   const handleStageMouseMove = useCallback((e) => {
@@ -131,8 +142,14 @@ export const useCanvasEvents = ({
       if (pointerPos) {
         updateCreatingShape(pointerPos);
       }
+    } else if (isMarqueeSelecting) {
+      const stage = e.target.getStage();
+      const pointerPos = stage.getPointerPosition();
+      if (pointerPos) {
+        updateMarqueeSelection(pointerPos);
+      }
     }
-  }, [isCreatingRectangle, isCreatingCircle, updateCreatingShape]);
+  }, [isCreatingRectangle, isCreatingCircle, updateCreatingShape, isMarqueeSelecting, updateMarqueeSelection]);
 
   // Handle mouse up for creation
   const handleStageMouseUp = useCallback((e) => {
@@ -141,6 +158,9 @@ export const useCanvasEvents = ({
         userColor: userCursorColor || '#667eea',
         userId: user?.uid
       });
+      return;
+    } else if (isMarqueeSelecting) {
+      finishMarqueeSelection();
       return;
     }
 
@@ -156,7 +176,7 @@ export const useCanvasEvents = ({
       y: stage.y()
     });
     stopDragging();
-  }, [isCreatingRectangle, isCreatingCircle, finishCreatingShape, userCursorColor, user, updatePanPosition, stopDragging]);
+  }, [isCreatingRectangle, isCreatingCircle, finishCreatingShape, userCursorColor, user, updatePanPosition, stopDragging, isMarqueeSelecting, finishMarqueeSelection]);
 
   return {
     handleDragStart,

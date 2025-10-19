@@ -30,6 +30,13 @@ const Toolbox = ({
       shortcut: 'V'
     },
     {
+      id: 'marquee',
+      name: 'Marquee',
+      icon: '📦',
+      description: 'Select multiple objects',
+      shortcut: 'M'
+    },
+    {
       id: 'rectangle',
       name: 'Rectangle',
       icon: '⬛',
@@ -199,6 +206,8 @@ const Toolbox = ({
             <span>Click to add text</span>
           ) : selectedTool === 'select' ? (
             <span>Click objects to select</span>
+          ) : selectedTool === 'marquee' ? (
+            <span>Click and drag to select multiple objects</span>
           ) : (
             <span>Select a tool to get started</span>
           )}

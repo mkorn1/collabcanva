@@ -96,6 +96,10 @@ export const useCanvas = (canvasId = 'main', user = null) => {
   const [currentText, setCurrentText] = useState(null);
   const [isCreatingText, setIsCreatingText] = useState(false);
   
+  // Marquee selection state
+  const [marqueeSelection, setMarqueeSelection] = useState(null);
+  const [isMarqueeSelecting, setIsMarqueeSelecting] = useState(false);
+  
   // Refs for performance and cleanup
   const stageRef = useRef(null);
   const dragStartRef = useRef(null);
@@ -872,6 +876,102 @@ export const useCanvas = (canvasId = 'main', user = null) => {
     // Text is created immediately, no cancel needed
   }, [isCreatingRectangle, isCreatingCircle, cancelRectangleCreation, cancelCircleCreation]);
 
+  // Marquee selection functions
+  const startMarqueeSelection = useCallback((startPoint) => {
+    const canvasPoint = screenToCanvas(startPoint, stageRef.current);
+    
+    dragStartRef.current = canvasPoint;
+    setIsMarqueeSelecting(true);
+    
+    // Create initial marquee selection
+    const initialMarquee = {
+      id: `marquee_${Date.now()}`,
+      x: canvasPoint.x,
+      y: canvasPoint.y,
+      width: 0,
+      height: 0
+    };
+    
+    setMarqueeSelection(initialMarquee);
+  }, []);
+
+  const updateMarqueeSelection = useCallback((currentPoint) => {
+    if (!isMarqueeSelecting || !dragStartRef.current || !marqueeSelection) {
+      return;
+    }
+    
+    const canvasPoint = screenToCanvas(currentPoint, stageRef.current);
+    const start = dragStartRef.current;
+    
+    // Calculate marquee dimensions
+    const minX = Math.min(start.x, canvasPoint.x);
+    const minY = Math.min(start.y, canvasPoint.y);
+    const width = Math.abs(canvasPoint.x - start.x);
+    const height = Math.abs(canvasPoint.y - start.y);
+    
+    // Update marquee selection
+    const updatedMarquee = {
+      ...marqueeSelection,
+      x: minX,
+      y: minY,
+      width: width,
+      height: height
+    };
+    
+    setMarqueeSelection(updatedMarquee);
+    
+    // Check which objects are within the marquee selection
+    const objectsInMarquee = objects.filter(obj => {
+      if (obj.type === 'rectangle') {
+        return (
+          obj.x < updatedMarquee.x + updatedMarquee.width &&
+          obj.x + obj.width > updatedMarquee.x &&
+          obj.y < updatedMarquee.y + updatedMarquee.height &&
+          obj.y + obj.height > updatedMarquee.y
+        );
+      } else if (obj.type === 'circle') {
+        // For circles, check if the circle intersects with the marquee
+        const centerX = obj.x;
+        const centerY = obj.y;
+        const radius = obj.width / 2; // Assuming width/height are the same for circles
+        
+        return (
+          centerX - radius < updatedMarquee.x + updatedMarquee.width &&
+          centerX + radius > updatedMarquee.x &&
+          centerY - radius < updatedMarquee.y + updatedMarquee.height &&
+          centerY + radius > updatedMarquee.y
+        );
+      } else if (obj.type === 'text') {
+        // For text, use bounding box approximation
+        const textWidth = obj.text ? obj.text.length * (obj.fontSize || 16) * 0.6 : 50;
+        const textHeight = obj.fontSize || 16;
+        
+        return (
+          obj.x < updatedMarquee.x + updatedMarquee.width &&
+          obj.x + textWidth > updatedMarquee.x &&
+          obj.y < updatedMarquee.y + updatedMarquee.height &&
+          obj.y + textHeight > updatedMarquee.y
+        );
+      }
+      return false;
+    });
+    
+    // Update selection with objects in marquee
+    setSelectedObjectIds(objectsInMarquee.map(obj => obj.id));
+  }, [isMarqueeSelecting, marqueeSelection, objects]);
+
+  const finishMarqueeSelection = useCallback(() => {
+    setMarqueeSelection(null);
+    setIsMarqueeSelecting(false);
+    dragStartRef.current = null;
+  }, []);
+
+  const cancelMarqueeSelection = useCallback(() => {
+    setMarqueeSelection(null);
+    setIsMarqueeSelecting(false);
+    dragStartRef.current = null;
+  }, []);
+
   return {
     // State
     objects,
@@ -893,6 +993,10 @@ export const useCanvas = (canvasId = 'main', user = null) => {
     // Text creation state
     currentText,
     isCreatingText,
+    
+    // Marquee selection state
+    marqueeSelection,
+    isMarqueeSelecting,
     
     // Sync state
     isLoading,
@@ -924,6 +1028,12 @@ export const useCanvas = (canvasId = 'main', user = null) => {
     updateCreatingShape,
     finishCreatingShape,
     cancelCreatingShape,
+    
+    // Marquee selection
+    startMarqueeSelection,
+    updateMarqueeSelection,
+    finishMarqueeSelection,
+    cancelMarqueeSelection,
     
     // Utilities
     screenToCanvas: convertScreenToCanvas,
