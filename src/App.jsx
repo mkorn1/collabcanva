@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import './App.css'
 
 // Import Firebase to test connection
@@ -15,15 +15,29 @@ import DarkModeToggle from './components/Layout/DarkModeToggle'
 // Import Canvas component
 import Canvas from './components/Canvas/Canvas'
 
+// Import Canvas hook for AI integration
+import { useCanvas } from './hooks/useCanvas.js'
+
 // Import AI Agent Panel
 import AIAgentPanel from './components/AI/AIAgentPanel'
 import CommandOutlinePreview from './components/AI/CommandOutlinePreview'
 import { processCommand, testConnection, getLangSmithStatus } from './services/aiAgent'
-import { executeCommand } from './services/commandExecutor'
+import { executeCommand, executeCommands } from './services/commandExecutor'
 
 // Main App content (shown when authenticated)
 function MainApp() {
   const { user, signOut } = useAuth()
+  
+  // Canvas context for AI integration
+  const canvasContext = useCanvas('main', user)
+  const {
+    objects,
+    selectedObjectIds,
+    addObject,
+    updateObject,
+    removeObject,
+    getSelectedObjects
+  } = canvasContext
   
   // AI Agent Panel state
   const [aiPanelOpen, setAiPanelOpen] = useState(false)
@@ -34,6 +48,19 @@ function MainApp() {
   const [previewVisible, setPreviewVisible] = useState(false)
   const [previewData, setPreviewData] = useState(null)
   const [pendingCommand, setPendingCommand] = useState(null)
+
+  // Serialize canvas state for AI consumption
+  const serializeCanvasState = useCallback(() => {
+    return {
+      objects: objects || [],
+      selectedObjects: getSelectedObjects ? getSelectedObjects() : [],
+      dimensions: {
+        width: 1920, // Canvas width
+        height: 1080 // Canvas height
+      },
+      selectedObjectIds: selectedObjectIds || []
+    }
+  }, [objects, selectedObjectIds, getSelectedObjects])
 
   const handleSignOut = async () => {
     try {
@@ -67,21 +94,28 @@ function MainApp() {
     // Process with AI service
     setAiLoading(true)
     try {
-      const canvasState = {
-        // TODO: Get actual canvas state from useCanvas hook
-        objects: [],
-        selectedObjects: [],
-        dimensions: { width: 1920, height: 1080 }
-      }
+      const canvasState = serializeCanvasState()
       
       const result = await processCommand(message, canvasState, user?.uid || 'anonymous')
       
       if (result.success) {
         if (result.type === 'function_call') {
           // AI wants to execute a function - show preview first
+          let functionCalls = [];
+          let summary = result.message;
+          
+          // Handle multi-step commands
+          if (result.functionCall.name === 'multi_step_command') {
+            functionCalls = result.functionCall.arguments.steps || [];
+            summary = `Executing ${functionCalls.length} steps: ${functionCalls.map(step => step.name).join(', ')}`;
+          } else {
+            // Single function call
+            functionCalls = [result.functionCall];
+          }
+          
           const aiMessage = {
             role: 'assistant',
-            content: `I'll ${result.functionCall.name} for you. ${result.message}`,
+            content: `I'll execute this command for you. ${summary}`,
             timestamp: new Date(),
             functionCall: result.functionCall
           }
@@ -89,9 +123,9 @@ function MainApp() {
           
           // Prepare preview data
           const preview = {
-            functionCalls: [result.functionCall],
-            summary: result.message,
-            affectedObjects: getAffectedObjectsPreview(result.functionCall, canvasState)
+            functionCalls: functionCalls,
+            summary: summary,
+            affectedObjects: getAffectedObjectsPreview(functionCalls, canvasState)
           }
           
           // Show preview overlay
@@ -148,31 +182,44 @@ function MainApp() {
   }
 
   // Helper function to get affected objects for preview
-  const getAffectedObjectsPreview = (functionCall, canvasState) => {
-    const { name, arguments: args } = functionCall;
+  const getAffectedObjectsPreview = (functionCalls, canvasState) => {
+    // Handle both single function call and array of function calls
+    const calls = Array.isArray(functionCalls) ? functionCalls : [functionCalls];
+    const affectedObjects = [];
     
-    switch (name) {
-      case 'create_shape':
-        return [{
-          id: 'new-' + Date.now(),
-          type: args.type,
-          fill: args.fill,
-          width: args.width,
-          height: args.height,
-          x: args.x,
-          y: args.y
-        }];
+    calls.forEach(functionCall => {
+      const { name, arguments: args } = functionCall;
       
-      case 'modify_shape':
-      case 'delete_shape':
-        return canvasState.objects.filter(obj => obj.id === args.id);
-      
-      case 'arrange_shapes':
-        return canvasState.objects.filter(obj => args.ids.includes(obj.id));
-      
-      default:
-        return [];
-    }
+      switch (name) {
+        case 'create_shape':
+          affectedObjects.push({
+            id: 'new-' + Date.now() + '-' + Math.random(),
+            type: args.type,
+            fill: args.fill,
+            width: args.width,
+            height: args.height,
+            x: args.x,
+            y: args.y
+          });
+          break;
+        
+        case 'modify_shape':
+        case 'delete_shape':
+          const existingObjects = canvasState.objects.filter(obj => obj.id === args.id);
+          affectedObjects.push(...existingObjects);
+          break;
+        
+        case 'arrange_shapes':
+          const arrangeObjects = canvasState.objects.filter(obj => args.ids.includes(obj.id));
+          affectedObjects.push(...arrangeObjects);
+          break;
+        
+        default:
+          break;
+      }
+    });
+    
+    return affectedObjects;
   }
 
   // Handle preview approval
@@ -180,16 +227,25 @@ function MainApp() {
     if (!pendingCommand) return;
     
     try {
-      // TODO: Get actual canvas context from useCanvas hook
-      const canvasContext = {
-        addObject: () => Promise.resolve('mock-id'),
-        updateObject: () => Promise.resolve(),
-        removeObject: () => Promise.resolve(),
-        objects: [],
-        getSelectedObjects: () => []
+      // Use real canvas context
+      const canvasContextForExecution = {
+        addObject,
+        updateObject,
+        removeObject,
+        objects: objects || [],
+        getSelectedObjects: getSelectedObjects || (() => [])
       };
       
-      const result = await executeCommand(pendingCommand, canvasContext, user);
+      let result;
+      
+      // Handle multi-step commands differently
+      if (pendingCommand.name === 'multi_step_command') {
+        const steps = pendingCommand.arguments.steps || [];
+        result = await executeCommands(steps, canvasContextForExecution, user);
+      } else {
+        // Single command
+        result = await executeCommand(pendingCommand, canvasContextForExecution, user);
+      }
       
       if (result.success) {
         const successMessage = {
@@ -330,7 +386,7 @@ function MainApp() {
 
       {/* Canvas takes up the full viewport minus the header */}
       <div className="canvas-container">
-        <Canvas />
+        <Canvas canvasContext={canvasContext} />
       </div>
 
       {/* AI Agent Panel */}

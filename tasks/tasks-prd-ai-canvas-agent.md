@@ -8,12 +8,14 @@ Based on: `prd-ai-canvas-agent.md`
 - `src/components/AI/AIAgentPanel.css` - Styling for AI panel
 - `src/services/aiAgent.js` - OpenAI API integration and command processing
 - `src/services/commandExecutor.js` - Executes AI function calls on canvas
+- `src/services/smartDefaults.js` - Intelligent defaults for colors, sizes, and positioning
 - `src/services/langsmith.js` - Optional monitoring and analytics
 - `src/hooks/useCanvas.js` - Canvas state management (existing, needs audit)
 - `src/hooks/useCanvasTools.js` - Canvas manipulation functions (existing, needs audit)
 - `src/__tests__/integration/aiAgent.test.js` - Integration tests for AI commands
 - `src/__tests__/services/aiAgent.test.js` - Unit tests for AI service
 - `src/__tests__/services/commandExecutor.test.js` - Unit tests for command executor
+- `src/__tests__/services/smartDefaults.test.js` - Unit tests for smart defaults service
 
 ### Notes
 
@@ -52,7 +54,7 @@ Based on: `prd-ai-canvas-agent.md`
   - [x] 2.11 Test OpenAI integration with simple chat messages
   - [x] 2.12 Add LangSmith integration (optional monitoring)
 
-- [ ] 3.0 Canvas Function Audit and Command Executor
+- [x] 3.0 Canvas Function Audit and Command Executor
   - [x] 3.1 Audit existing canvas functions in `useCanvas.js`
   - [x] 3.2 Document function signatures for createObject, updateObject, deleteObject
   - [x] 3.3 Audit canvas manipulation functions in `useCanvasTools.js`
@@ -69,22 +71,27 @@ Based on: `prd-ai-canvas-agent.md`
   - [x] 3.14 Add error handling for partial command failures
 
 - [ ] 4.0 Command Processing and Function Schema
-  - [ ] 4.1 Define OpenAI function schema for 4 core functions
-  - [ ] 4.2 Enhance system prompt with canvas state context
-  - [ ] 4.3 Add examples for all command categories (creation, manipulation, layout, complex)
-  - [ ] 4.4 Implement canvas state serialization (objects, dimensions, selected objects)
-  - [ ] 4.5 Create smart defaults for colors, sizes, and positioning
-  - [ ] 4.6 Implement `arrange_shapes` execution logic
-  - [ ] 4.7 Add complex layout templates (login form, card layout, navigation bar)
-  - [ ] 4.8 Implement multi-step command execution (array of function calls)
-  - [ ] 4.9 Add object reference resolution ("the blue rectangle" → object ID)
-  - [ ] 4.10 Create relative positioning logic ("next to", "below", "center")
-  - [ ] 4.11 Implement layout algorithms (row, column, grid, distribute)
-  - [ ] 4.12 Add ambiguity handling and clarification prompts
-  - [ ] 4.13 Optimize system prompt for token efficiency
+  - [x] 4.1 Define OpenAI function schema for 4 core functions
+  - [x] 4.2 Enhance system prompt with canvas state context
+  - [x] 4.3 Add examples for all command categories (creation, manipulation, layout, complex)
+  - [x] 4.4 Implement canvas state serialization (objects, dimensions, selected objects)
+  - [x] 4.5 Create smart defaults for colors, sizes, and positioning
+    - [x] 4.5.1 Create smartDefaults.js service with color palette and size presets
+    - [x] 4.5.2 Implement canvas state analysis functions (colors, sizes, spacing)
+    - [x] 4.5.3 Create intelligent positioning logic (empty space detection, nearby placement)
+    - [x] 4.5.4 Implement user intent extraction from natural language commands
+    - [x] 4.5.5 Integrate smart defaults into AI Agent system prompt and function calls
+  - [x] 4.6 Implement `arrange_shapes` execution logic
+  - [x] 4.7 Add complex layout templates (login form, card layout, navigation bar)
+  - [x] 4.8 Implement multi-step command execution (array of function calls)
+  - [x] 4.9 Add object reference resolution ("the blue rectangle" → object ID)
+  - [x] 4.10 Create relative positioning logic ("next to", "below", "center")
+  - [x] 4.11 Implement layout algorithms (row, column, grid, distribute)
+  - [x] 4.12 Add ambiguity handling and clarification prompts
+  - [x] 4.13 Optimize system prompt for token efficiency
 
 - [ ] 5.0 Testing and Performance Optimization
-  - [ ] 5.1 Create integration test suite (`src/__tests__/integration/aiAgent.test.js`)
+  - [x] 5.1 Create integration test suite (`src/__tests__/integration/aiAgent.test.js`)
   - [ ] 5.2 Test all 8+ command types (3 creation, 3 manipulation, 2 layout, 2 complex)
   - [ ] 5.3 Create unit tests for AI service (`src/__tests__/services/aiAgent.test.js`)
   - [ ] 5.4 Create unit tests for command executor (`src/__tests__/services/commandExecutor.test.js`)

@@ -69,9 +69,13 @@ const PerformanceStats = () => {
   );
 };
 
-const Canvas = () => {
+const Canvas = ({ canvasContext = null }) => {
   // Get current authenticated user FIRST
   const { user } = useAuth();
+
+  // Use provided canvas context or create our own
+  const canvasHookResult = useCanvas('main', user);
+  const canvasData = canvasContext || canvasHookResult;
 
   // Now we can use 'user' in other hooks
   const {
@@ -110,7 +114,7 @@ const Canvas = () => {
     addObject,
     getSelectedObjects,
     isObjectSelected
-  } = useCanvas('main', user);
+  } = canvasData;
 
   // Get presence data for online users
   const { 
