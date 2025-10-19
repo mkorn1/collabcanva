@@ -32,6 +32,40 @@ import { broadcastDeletion, listenToLiveDeletions } from '../services/realtimeDe
 export const useCanvas = (canvasId = 'main', user = null) => {
   // Canvas objects state  
   const [objects, setObjects] = useState([]);
+  
+  // Helper function to compare transform data with floating-point tolerance
+  const _isSameTransformData = (localObj, remoteObj) => {
+    const tolerance = 0.01; // Increased tolerance for floating-point differences (1 pixel)
+    
+    const compareFloat = (a, b) => Math.abs(a - b) < tolerance;
+    
+    // Log the differences for debugging
+    const differences = {
+      x: Math.abs((localObj.x || 0) - (remoteObj.x || 0)),
+      y: Math.abs((localObj.y || 0) - (remoteObj.y || 0)),
+      width: Math.abs((localObj.width || 0) - (remoteObj.width || 0)),
+      height: Math.abs((localObj.height || 0) - (remoteObj.height || 0)),
+      radius: Math.abs((localObj.radius || 0) - (remoteObj.radius || 0)),
+      fontSize: Math.abs((localObj.fontSize || 0) - (remoteObj.fontSize || 0)),
+      rotation: Math.abs((localObj.rotation || 0) - (remoteObj.rotation || 0))
+    };
+    
+    const isSame = (
+      compareFloat(localObj.x || 0, remoteObj.x || 0) &&
+      compareFloat(localObj.y || 0, remoteObj.y || 0) &&
+      compareFloat(localObj.width || 0, remoteObj.width || 0) &&
+      compareFloat(localObj.height || 0, remoteObj.height || 0) &&
+      compareFloat(localObj.radius || 0, remoteObj.radius || 0) &&
+      compareFloat(localObj.fontSize || 0, remoteObj.fontSize || 0) &&
+      compareFloat(localObj.rotation || 0, remoteObj.rotation || 0)
+    );
+    
+    if (!isSame) {
+      console.log('Transform data differences:', differences);
+    }
+    
+    return isSame;
+  };
   const [selectedObjectIds, setSelectedObjectIds] = useState([]);
   
   // Sync state
@@ -411,24 +445,8 @@ export const useCanvas = (canvasId = 'main', user = null) => {
             if (localObj && localObj._isOptimistic) {
               // Check if this is the same user's update (avoid self-conflict)
               if (localObj.lastModifiedBy === remoteObj.lastModifiedBy) {
-                // Same user - check if the data is essentially the same
-                const isSameData = JSON.stringify({
-                  x: localObj.x,
-                  y: localObj.y,
-                  width: localObj.width,
-                  height: localObj.height,
-                  radius: localObj.radius,
-                  fontSize: localObj.fontSize,
-                  rotation: localObj.rotation
-                }) === JSON.stringify({
-                  x: remoteObj.x,
-                  y: remoteObj.y,
-                  width: remoteObj.width,
-                  height: remoteObj.height,
-                  radius: remoteObj.radius,
-                  fontSize: remoteObj.fontSize,
-                  rotation: remoteObj.rotation
-                });
+                // Same user - check if the data is essentially the same (with floating-point tolerance)
+                const isSameData = _isSameTransformData(localObj, remoteObj);
                 
                 if (isSameData) {
                   // Same user, same data - use remote object (it has server timestamp)

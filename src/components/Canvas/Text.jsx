@@ -327,6 +327,7 @@ const Text = memo(({
         fontStyle={text.fontStyle || ''}
         fill={text.fill || '#000000'}
         align={text.align || 'left'}
+        rotation={text.rotation || 0}
         lineHeight={text.lineHeight || 1}
         letterSpacing={text.letterSpacing || 0}
         width={text.width || undefined}

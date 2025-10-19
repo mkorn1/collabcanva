@@ -210,6 +210,7 @@ const Rectangle = memo(({
         y={rectangle.y}
         width={rectangle.width}
         height={rectangle.height}
+        rotation={rectangle.rotation || 0}
         fill={rectangle.fill}
         stroke={isSelected ? '#0066ff' : (showLastEditor ? lastEditorInfo?.color || '#ff6b6b' : rectangle.stroke)}
         strokeWidth={isSelected ? 3 : (showLastEditor ? 3 : rectangle.strokeWidth || 2)}

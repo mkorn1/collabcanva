@@ -208,6 +208,7 @@ const Circle = memo(({
         x={circle.x}
         y={circle.y}
         radius={circle.radius}
+        rotation={circle.rotation || 0}
         fill={circle.fill}
         stroke={isSelected ? '#0066ff' : (showLastEditor ? lastEditorInfo?.color || '#ff6b6b' : circle.stroke)}
         strokeWidth={isSelected ? 3 : (showLastEditor ? 3 : circle.strokeWidth || 2)}
