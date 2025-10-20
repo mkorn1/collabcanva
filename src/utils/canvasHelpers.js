@@ -230,6 +230,71 @@ export const snapPointToGrid = (point, gridSize = 10) => {
   };
 };
 
+// ============ LAYER MANAGEMENT ============
+
+/**
+ * Sort objects by layer position (descending order for Konva rendering)
+ * Objects with lower layerPosition values appear in front (foreground)
+ * Objects with higher layerPosition values appear behind (background)
+ * In Konva, objects rendered later appear on top, so we sort descending
+ * @param {Array} objects - Array of objects with layerPosition property
+ * @returns {Array} - Sorted array of objects (higher numbers first for rendering)
+ */
+export const sortObjectsByLayerPosition = (objects) => {
+  if (!Array.isArray(objects)) {
+    console.warn('sortObjectsByLayerPosition: Invalid input - expected array');
+    return [];
+  }
+  
+  return [...objects].sort((a, b) => {
+    // Ensure layerPosition exists and is a number, default to 0
+    const layerA = typeof a.layerPosition === 'number' ? a.layerPosition : 0;
+    const layerB = typeof b.layerPosition === 'number' ? b.layerPosition : 0;
+    
+    // Sort in descending order (higher numbers first) so lower numbers render last (on top)
+    return layerB - layerA;
+  });
+};
+
+/**
+ * Get the next available layer position for new objects
+ * @param {Array} objects - Array of existing objects
+ * @param {number} preferredPosition - Preferred layer position (default: 0)
+ * @returns {number} - Next available layer position
+ */
+export const getNextLayerPosition = (objects, preferredPosition = 0) => {
+  if (!Array.isArray(objects)) {
+    return preferredPosition;
+  }
+  
+  // If preferred position is available, use it
+  const existingPositions = objects.map(obj => obj.layerPosition || 0);
+  if (!existingPositions.includes(preferredPosition)) {
+    return preferredPosition;
+  }
+  
+  // Find the next available position after preferred
+  let nextPosition = preferredPosition + 1;
+  while (existingPositions.includes(nextPosition)) {
+    nextPosition++;
+  }
+  
+  return nextPosition;
+};
+
+/**
+ * Validate layer position value
+ * @param {number} layerPosition - Layer position to validate
+ * @returns {boolean} - true if valid
+ */
+export const isValidLayerPosition = (layerPosition) => {
+  return typeof layerPosition === 'number' && 
+         !isNaN(layerPosition) && 
+         isFinite(layerPosition) &&
+         layerPosition >= 0 &&
+         Number.isInteger(layerPosition);
+};
+
 // ============ VALIDATION ============
 
 /**

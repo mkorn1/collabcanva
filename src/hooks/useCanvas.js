@@ -5,7 +5,9 @@ import {
   clampPanPosition,
   calculateZoomPosition,
   screenToCanvas,
-  canvasToScreen 
+  canvasToScreen,
+  sortObjectsByLayerPosition,
+  getNextLayerPosition
 } from '../utils/canvasHelpers.js';
 import {
   createObject,
@@ -51,7 +53,8 @@ export const useCanvas = (canvasId = 'main', user = null) => {
       height: Math.abs((localObj.height || 0) - (remoteObj.height || 0)),
       radius: Math.abs((localObj.radius || 0) - (remoteObj.radius || 0)),
       fontSize: Math.abs((localObj.fontSize || 0) - (remoteObj.fontSize || 0)),
-      rotation: Math.abs((localObj.rotation || 0) - (remoteObj.rotation || 0))
+      rotation: Math.abs((localObj.rotation || 0) - (remoteObj.rotation || 0)),
+      layerPosition: Math.abs((localObj.layerPosition || 0) - (remoteObj.layerPosition || 0))
     };
     
     const isSame = (
@@ -61,7 +64,8 @@ export const useCanvas = (canvasId = 'main', user = null) => {
       compareFloat(localObj.height || 0, remoteObj.height || 0, true) && // Resize property
       compareFloat(localObj.radius || 0, remoteObj.radius || 0, true) && // Resize property
       compareFloat(localObj.fontSize || 0, remoteObj.fontSize || 0, true) && // Resize property
-      compareFloat(localObj.rotation || 0, remoteObj.rotation || 0) // Rotation uses base tolerance
+      compareFloat(localObj.rotation || 0, remoteObj.rotation || 0) && // Rotation uses base tolerance
+      (localObj.layerPosition || 0) === (remoteObj.layerPosition || 0) // Layer position must be exactly equal
     );
     
     if (!isSame) {
@@ -140,6 +144,7 @@ export const useCanvas = (canvasId = 'main', user = null) => {
       const objectForFirestore = {
         ...newObject,
         type: newObject.type || 'rectangle',
+        layerPosition: newObject.layerPosition !== undefined ? newObject.layerPosition : getNextLayerPosition(objects, 0), // Use next available position
         createdBy: user?.uid || null,
         createdByName: user?.displayName || user?.email || 'Anonymous'
       };
@@ -224,6 +229,9 @@ export const useCanvas = (canvasId = 'main', user = null) => {
       // Check if this is a rotation operation (immediate sync)
       const isRotationOperation = updates.rotation !== undefined;
       
+      // Check if this is a layer position operation (immediate sync)
+      const isLayerPositionOperation = updates.layerPosition !== undefined;
+      
       // Check if this is a resize operation (debounced sync)
       const isResizeOperation = updates.width !== undefined || 
                                updates.height !== undefined || 
@@ -234,12 +242,13 @@ export const useCanvas = (canvasId = 'main', user = null) => {
         objectId,
         updates,
         isRotationOperation,
+        isLayerPositionOperation,
         isResizeOperation,
         hasWriteQueue: !!writeQueueRef.current
       });
       
-      if (isRotationOperation) {
-        // Rotation operations: use direct update for immediate sync
+      if (isRotationOperation || isLayerPositionOperation) {
+        // Rotation and layer position operations: use direct update for immediate sync
         await updateObjectInFirestore(canvasId, objectId, updates, options);
       } else if (isResizeOperation) {
         // Resize operations: use write queue with longer debounce to prevent rapid updates
@@ -507,8 +516,11 @@ export const useCanvas = (canvasId = 'main', user = null) => {
               return cleanResolved;
             }
             
-            // No conflict, use remote object as-is
-            return remoteObj;
+            // No conflict, use remote object as-is with backward compatibility
+            return {
+              ...remoteObj,
+              layerPosition: remoteObj.layerPosition || 0 // Ensure layerPosition exists
+            };
           });
           
           // Handle deleted objects (objects that exist locally but not in Firestore)
@@ -522,7 +534,10 @@ export const useCanvas = (canvasId = 'main', user = null) => {
             !obj._isOptimisticDelete && // Not an optimistic deletion
             !obj.createdAt && // Newly created objects don't have createdAt yet
             Date.now() - obj.updatedAt < 5000 // Only keep very recent objects (5sec)
-          );
+          ).map(obj => ({
+            ...obj,
+            layerPosition: obj.layerPosition || 0 // Ensure layerPosition exists
+          }));
           
           // Log deletions for debugging
           const deletedObjects = localOnlyObjects.filter(obj => 
@@ -634,12 +649,13 @@ export const useCanvas = (canvasId = 'main', user = null) => {
       stroke: userColor,
       strokeWidth: 2,
       opacity: 0.7,
+      layerPosition: getNextLayerPosition(objects, 0), // Use next available position
       isPreview: true, // Mark as preview for visual distinction
       createdBy: null // Will be set when finalized
     };
     
     setCurrentRectangle(initialRect);
-  }, []);
+  }, [objects]);
 
   const updateRectangleCreation = useCallback((currentPoint) => {
     if (!isCreatingRectangle || !dragStartRef.current || !currentRectangle) {
@@ -728,13 +744,14 @@ export const useCanvas = (canvasId = 'main', user = null) => {
       stroke: userColor,
       strokeWidth: 2,
       opacity: 0.7, // Preview opacity
+      layerPosition: getNextLayerPosition(objects, 0), // Use next available position
       isPreview: true,
       createdAt: null,
       updatedAt: null
     };
     
     setCurrentCircle(initialCircle);
-  }, []);
+  }, [objects]);
 
   const updateCircleCreation = useCallback((currentPoint) => {
     if (!isCreatingCircle || !dragStartRef.current || !currentCircle) {
@@ -825,6 +842,7 @@ export const useCanvas = (canvasId = 'main', user = null) => {
       stroke: null,
       strokeWidth: 0,
       opacity: 1.0,
+      layerPosition: getNextLayerPosition(objects, 0), // Use next available position
       isPreview: false,
       createdBy: null,
       createdAt: Date.now(),
@@ -835,7 +853,7 @@ export const useCanvas = (canvasId = 'main', user = null) => {
     const objectId = addObject(initialText);
     
     return objectId;
-  }, [addObject]);
+  }, [addObject, objects]);
 
   // Enhanced creation state management
   const startCreatingShape = useCallback((shapeType, startPoint, options = {}) => {

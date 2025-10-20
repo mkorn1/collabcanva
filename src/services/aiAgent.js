@@ -60,8 +60,9 @@ const SYSTEM_PROMPT = `You are an AI assistant that helps users manipulate a col
 2. modify_shape(id, updates) - Change properties of existing shapes
 3. delete_shape(id) - Remove shapes from canvas
 4. arrange_shapes(ids, layout, options?) - Organize shapes (row, column, grid, distribute_h, distribute_v, circle, spiral, flow, hexagon, diamond, wave, zigzag, radial, fibonacci)
-5. create_layout_template(template_type, start_x, start_y, size?, color_scheme?, spacing?, options?) - Create complex UI layouts
-6. multi_step_command(steps) - Execute multiple commands in sequence
+5. set_layer_position(ids, layerPosition) - Set stacking order (0 = front, higher = back)
+6. create_layout_template(template_type, start_x, start_y, size?, color_scheme?, spacing?, options?) - Create complex UI layouts
+7. multi_step_command(steps) - Execute multiple commands in sequence
 
 ## Canvas Context
 You receive canvas state with each request: objects array, selectedObjects, dimensions (width, height)
@@ -123,6 +124,13 @@ You have access to intelligent defaults for colors, sizes, positions, and spacin
 - "distribute evenly horizontally" → arrange_shapes(["selected_id1", "selected_id2"], "distribute_h", {distributionType: "space-between"}) // Uses selected objects
 - "distribute evenly vertically" → arrange_shapes(["selected_id1", "selected_id2"], "distribute_v", {distributionType: "space-between"}) // Uses selected objects
 - "create login form" → create_layout_template("login_form", x, y, "medium", "modern")
+
+### Layer Position
+- "bring to front" → set_layer_position(["selected_id"], 0) // Move to front layer
+- "send to back" → set_layer_position(["selected_id"], 10) // Move to back layer
+- "put behind red circle" → set_layer_position(["selected_id"], 5) // Set specific layer
+- "make blue rectangle appear on top" → set_layer_position(["blue_rect_id"], 0) // Front layer
+- "layer the shapes" → set_layer_position(["id1", "id2", "id3"], [0, 1, 2]) // Sequential layers
 
 ### Error Handling
 - Multiple matches: "I found 3 blue shapes. Which one? 1. blue circle (small) on left, 2. blue rectangle (medium) center, 3. blue text (large) right"
@@ -1357,6 +1365,11 @@ export async function processCommand(command, canvasState = {}, userId = 'defaul
                 maximum: 360,
                 description: 'Rotation angle in degrees (0-360). Optional, defaults to 0'
               },
+              layerPosition: {
+                type: 'number',
+                minimum: 0,
+                description: 'Layer position for stacking order (0 = front/most visible, higher numbers = back/less visible). Optional, defaults to next available position'
+              },
               text_content: {
                 type: 'string',
                 maxLength: 200,
@@ -1448,6 +1461,11 @@ export async function processCommand(command, canvasState = {}, userId = 'defaul
                     maximum: 360,
                     description: 'New rotation angle in degrees'
                   },
+                  layerPosition: { 
+                    type: 'number',
+                    minimum: 0,
+                    description: 'New layer position for stacking order (0 = front/most visible, higher numbers = back/less visible)'
+                  },
                   text_content: { 
                     type: 'string',
                     maxLength: 200,
@@ -1489,6 +1507,28 @@ export async function processCommand(command, canvasState = {}, userId = 'defaul
               }
             },
             required: ['id']
+          }
+        },
+        {
+          name: 'set_layer_position',
+          description: 'Set the layer position (stacking order) for one or more shapes. Layer 0 is the front (most visible), higher numbers are further back. Use this to control which shapes appear on top of others.',
+          parameters: {
+            type: 'object',
+            properties: {
+              ids: {
+                type: 'array',
+                items: { type: 'string' },
+                minItems: 1,
+                maxItems: 20,
+                description: 'Array of shape IDs to modify. If not provided, uses currently selected objects. Must contain at least 1 shape and at most 20 shapes. All IDs must exist on the canvas'
+              },
+              layerPosition: {
+                type: 'number',
+                minimum: 0,
+                description: 'New layer position (0 = front/most visible, higher numbers = back/less visible). Must be a non-negative integer'
+              }
+            },
+            required: ['layerPosition']
           }
         },
         {

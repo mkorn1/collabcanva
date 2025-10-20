@@ -151,6 +151,9 @@ export async function executeCommand(functionCall, canvasContext, user) {
       case 'arrange_shapes':
         return await executeArrangeShapes(args, canvasContext, user);
       
+      case 'set_layer_position':
+        return await setLayerPosition(args.ids, args.layerPosition, canvasContext, user);
+      
       case 'create_layout_template':
         return await executeCreateLayoutTemplate(args, canvasContext, user);
       
@@ -412,7 +415,8 @@ async function executeCreateShape(args, canvasContext, user) {
     stroke: args.stroke || args.fill,
     strokeWidth: args.strokeWidth || 2,
     opacity: Math.max(0, Math.min(1, args.opacity || 1)),
-    rotation: args.rotation || 0
+    rotation: args.rotation || 0,
+    layerPosition: args.layerPosition !== undefined ? Math.max(0, args.layerPosition) : undefined // Let useCanvas assign unique position
   };
   
   console.log('🎨 Created new object:', newObject);
@@ -556,6 +560,11 @@ async function executeModifyShape(args, canvasContext, user) {
   if (args.updates.rotation !== undefined) {
     updates.rotation = args.updates.rotation % 360;
     if (updates.rotation < 0) updates.rotation += 360;
+  }
+  
+  // Layer position updates
+  if (args.updates.layerPosition !== undefined) {
+    updates.layerPosition = Math.max(0, args.updates.layerPosition);
   }
   
   // Text-specific updates
@@ -2580,6 +2589,12 @@ export function validateFunctionCall(functionCall) {
       }
       break;
     
+    case 'set_layer_position':
+      if (args.layerPosition === undefined || typeof args.layerPosition !== 'number' || args.layerPosition < 0) {
+        return { valid: false, error: 'Missing or invalid layerPosition for set_layer_position' };
+      }
+      break;
+    
     case 'create_layout_template':
       if (!args.template_type || args.start_x === undefined || args.start_y === undefined) {
         return { valid: false, error: 'Missing required arguments for create_layout_template' };
@@ -2597,6 +2612,95 @@ export function validateFunctionCall(functionCall) {
   }
   
   return { valid: true };
+}
+
+/**
+ * Set layer position for one or more objects
+ * @param {string|Array} objectIds - Object ID(s) to modify
+ * @param {number} layerPosition - New layer position (0 = front, higher = back)
+ * @param {Object} canvasContext - Canvas state and functions
+ * @param {Object} user - User context
+ * @returns {Promise<Object>} - Result object
+ */
+export async function setLayerPosition(objectIds, layerPosition, canvasContext, user) {
+  const { updateObject, objects } = canvasContext;
+  
+  // Validate layer position
+  if (typeof layerPosition !== 'number' || layerPosition < 0 || !Number.isInteger(layerPosition)) {
+    return {
+      success: false,
+      message: `Invalid layer position: ${layerPosition}. Must be a non-negative integer.`,
+      type: 'error'
+    };
+  }
+  
+  // Resolve object IDs
+  const resolvedIds = resolveObjectIds(objectIds, canvasContext);
+  
+  if (resolvedIds.length === 0) {
+    return {
+      success: false,
+      message: 'No objects specified. Select objects first or provide object IDs.',
+      type: 'error'
+    };
+  }
+  
+  // Update each object
+  const results = [];
+  for (const objectId of resolvedIds) {
+    try {
+      const object = objects.find(obj => obj.id === objectId);
+      if (!object) {
+        results.push({
+          success: false,
+          message: `Object ${objectId} not found`,
+          type: 'error'
+        });
+        continue;
+      }
+      
+      await updateObject(objectId, { layerPosition });
+      results.push({
+        success: true,
+        message: `Set ${object.type} to layer ${layerPosition}`,
+        type: 'success'
+      });
+    } catch (error) {
+      console.error(`Failed to update layer position for ${objectId}:`, error);
+      results.push({
+        success: false,
+        message: `Failed to update ${objectId}: ${error.message}`,
+        type: 'error'
+      });
+    }
+  }
+  
+  // Return summary result
+  const successful = results.filter(r => r.success).length;
+  const failed = results.filter(r => !r.success).length;
+  
+  if (failed === 0) {
+    return {
+      success: true,
+      message: `Successfully set layer position to ${layerPosition} for ${successful} object(s)`,
+      type: 'success',
+      details: results
+    };
+  } else if (successful === 0) {
+    return {
+      success: false,
+      message: `Failed to update layer position for all ${failed} object(s)`,
+      type: 'error',
+      details: results
+    };
+  } else {
+    return {
+      success: true,
+      message: `Updated layer position for ${successful} object(s), ${failed} failed`,
+      type: 'warning',
+      details: results
+    };
+  }
 }
 
 export {

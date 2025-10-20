@@ -15,7 +15,8 @@ const Rectangle = memo(({
   onResize, // Function to handle resize operations
   selectedObjects = [], // Array of all selected objects for coordinated dragging
   onMultiMove, // Function to handle multi-object movement
-  onMultiTransform // Function to handle multi-object transform operations
+  onMultiTransform, // Function to handle multi-object transform operations
+  onContextMenu // Function to handle right-click context menu
 }) => {
   // Track drag start position for multi-object movement
   const dragStartPosRef = useRef(null);
@@ -52,6 +53,20 @@ const Rectangle = memo(({
       // Check if Ctrl/Cmd key is pressed for multi-select
       const isMultiSelect = event && (event.ctrlKey || event.metaKey);
       onSelect(rectangle.id, isMultiSelect);
+    }
+  };
+
+  // Handle right-click for context menu
+  const handleRightClick = (e) => {
+    // Handle both Konva events (e.evt) and DOM events (e)
+    const event = e.evt || e;
+    if (event && event.stopPropagation) {
+      event.stopPropagation();
+    }
+    e.cancelBubble = true; // Keep for compatibility
+    
+    if (onContextMenu) {
+      onContextMenu(event, rectangle);
     }
   };
 
@@ -351,6 +366,7 @@ const Rectangle = memo(({
         onMouseDown={handleMouseDown}
         onClick={handleClick}
         onTap={handleClick} // Mobile support
+        onContextMenu={handleRightClick}
         onDragStart={handleDragStart}
         onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}

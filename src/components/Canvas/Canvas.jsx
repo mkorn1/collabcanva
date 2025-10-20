@@ -4,6 +4,7 @@ import {
   CANVAS_WIDTH, 
   CANVAS_HEIGHT
 } from '../../utils/constants.js';
+import { sortObjectsByLayerPosition } from '../../utils/canvasHelpers.js';
 import { useCanvas } from '../../hooks/useCanvas.js';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { usePresence } from '../../hooks/usePresence.js';
@@ -21,6 +22,8 @@ import Text from './Text.jsx';
 import TextFormattingPanel from './TextFormattingPanel.jsx';
 import ColorPicker from './ColorPicker.jsx';
 import DeletionWarning from './DeletionWarning.jsx';
+import ContextMenu from './ContextMenu.jsx';
+import LayerPositionDialog from './LayerPositionDialog.jsx';
 
 // Performance Stats Component for Development
 const PerformanceStats = () => {
@@ -208,10 +211,28 @@ const Canvas = ({ canvasContext = null, previewObjects = [] }) => {
     }
   }, [initializeCursorTracking, user]);
 
+  // Memoize sorted objects by layer position for consistent rendering order
+  // Performance optimization: sorting only occurs when objects array changes
+  const sortedObjects = useMemo(() => {
+    console.log('🔄 Sorting objects by layer position:', objects.length, 'objects');
+    const sorted = sortObjectsByLayerPosition(objects);
+    
+    // Log layer positions for debugging (development only)
+    if (import.meta.env.DEV && sorted.length > 0) {
+      console.log('📊 Layer positions:', sorted.map(obj => ({ 
+        id: obj.id, 
+        type: obj.type, 
+        layerPosition: obj.layerPosition || 0 
+      })));
+    }
+    
+    return sorted;
+  }, [objects]);
+
   // Memoize selected objects to avoid recalculating on every render
   const selectedObjects = useMemo(() => {
-    return objects.filter(obj => selectedObjectIds.includes(obj.id));
-  }, [objects, selectedObjectIds]);
+    return sortedObjects.filter(obj => selectedObjectIds.includes(obj.id));
+  }, [sortedObjects, selectedObjectIds]);
 
   // Get the first selected text object for formatting panel
   const selectedTextObject = useMemo(() => {
@@ -225,6 +246,19 @@ const Canvas = ({ canvasContext = null, previewObjects = [] }) => {
 
   // Color picker state
   const [showColorPicker, setShowColorPicker] = useState(false);
+
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState({
+    isVisible: false,
+    position: { x: 0, y: 0 },
+    targetObject: null
+  });
+
+  // Layer position dialog state
+  const [layerPositionDialog, setLayerPositionDialog] = useState({
+    isVisible: false,
+    targetObject: null
+  });
 
   // Handle rectangle selection
   const handleRectangleSelect = useCallback((rectangleId, multiSelect = false) => {
@@ -322,6 +356,117 @@ const Canvas = ({ canvasContext = null, previewObjects = [] }) => {
       setShowColorPicker(true);
     }
   }, [selectedObjectForColor]);
+
+  // Context menu handlers
+  const handleContextMenu = useCallback((event, targetObject = null) => {
+    event.preventDefault();
+    
+    // Convert screen coordinates to viewport coordinates
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    
+    setContextMenu({
+      isVisible: true,
+      position: { x, y },
+      targetObject
+    });
+  }, []);
+
+  const handleCloseContextMenu = useCallback(() => {
+    setContextMenu({
+      isVisible: false,
+      position: { x: 0, y: 0 },
+      targetObject: null
+    });
+  }, []);
+
+  const handleLayerPositionEdit = useCallback(() => {
+    if (contextMenu.targetObject) {
+      // Open layer position dialog
+      setLayerPositionDialog({
+        isVisible: true,
+        targetObject: contextMenu.targetObject
+      });
+      handleCloseContextMenu();
+    }
+  }, [contextMenu.targetObject, handleCloseContextMenu]);
+
+  const handleBringToFront = useCallback(async () => {
+    if (contextMenu.targetObject) {
+      try {
+        console.log('🔧 BRING TO FRONT:', contextMenu.targetObject.id, 'setting layerPosition to 0');
+        await updateObject(contextMenu.targetObject.id, { layerPosition: 0 });
+        handleCloseContextMenu();
+      } catch (error) {
+        console.error('Failed to bring object to front:', error);
+      }
+    }
+  }, [contextMenu.targetObject, updateObject, handleCloseContextMenu]);
+
+  const handleSendToBack = useCallback(async () => {
+    if (contextMenu.targetObject) {
+      try {
+        // Find the highest layer position and add 1
+        const maxLayerPosition = Math.max(...sortedObjects.map(obj => obj.layerPosition || 0));
+        const newLayerPosition = maxLayerPosition + 1;
+        console.log('🔧 SEND TO BACK:', contextMenu.targetObject.id, 'setting layerPosition to', newLayerPosition);
+        console.log('🔧 Current layer positions:', sortedObjects.map(obj => ({ id: obj.id, layerPosition: obj.layerPosition || 0 })));
+        await updateObject(contextMenu.targetObject.id, { layerPosition: newLayerPosition });
+        handleCloseContextMenu();
+      } catch (error) {
+        console.error('Failed to send object to back:', error);
+      }
+    }
+  }, [contextMenu.targetObject, sortedObjects, updateObject, handleCloseContextMenu]);
+
+  const handleDuplicateObject = useCallback(async () => {
+    if (contextMenu.targetObject) {
+      try {
+        const duplicatedObject = {
+          ...contextMenu.targetObject,
+          id: undefined, // Let Firestore generate new ID
+          x: contextMenu.targetObject.x + 20, // Offset slightly
+          y: contextMenu.targetObject.y + 20,
+          layerPosition: contextMenu.targetObject.layerPosition || 0
+        };
+        
+        await addObject(duplicatedObject);
+        handleCloseContextMenu();
+      } catch (error) {
+        console.error('Failed to duplicate object:', error);
+      }
+    }
+  }, [contextMenu.targetObject, addObject, handleCloseContextMenu]);
+
+  const handleDeleteObject = useCallback(async () => {
+    if (contextMenu.targetObject) {
+      try {
+        await removeObject(contextMenu.targetObject.id);
+        handleCloseContextMenu();
+      } catch (error) {
+        console.error('Failed to delete object:', error);
+      }
+    }
+  }, [contextMenu.targetObject, removeObject, handleCloseContextMenu]);
+
+  // Layer position dialog handlers
+  const handleCloseLayerPositionDialog = useCallback(() => {
+    setLayerPositionDialog({
+      isVisible: false,
+      targetObject: null
+    });
+  }, []);
+
+  const handleApplyLayerPosition = useCallback(async (objectId, newLayerPosition) => {
+    try {
+      console.log('🔧 LAYER POSITION DIALOG:', objectId, 'setting layerPosition to', newLayerPosition);
+      await updateObject(objectId, { layerPosition: newLayerPosition });
+      console.log('✅ Layer position updated:', objectId, 'to', newLayerPosition);
+    } catch (error) {
+      console.error('Failed to update layer position:', error);
+    }
+  }, [updateObject]);
 
   // Handle canvas export
   const handleExportCanvas = useCallback(async () => {
@@ -513,11 +658,12 @@ const Canvas = ({ canvasContext = null, previewObjects = [] }) => {
         onMouseUp={handleStageMouseUp}
         onDragEnd={handleDragEnd}
         onWheel={handleWheel}
+        onContextMenu={(e) => handleContextMenu(e.evt)}
       >
         {/* Main canvas layer - this will contain all canvas objects */}
         <Layer>
-          {/* Render existing objects */}
-          {objects.map((obj) => {
+          {/* Render existing objects sorted by layer position */}
+          {sortedObjects.map((obj) => {
             if (obj.type === 'rectangle') {
               return (
                 <Rectangle
@@ -531,6 +677,7 @@ const Canvas = ({ canvasContext = null, previewObjects = [] }) => {
                   selectedObjects={selectedObjects}
                   onMultiMove={handleMultiObjectMove}
                   onMultiTransform={handleMultiObjectTransform}
+                  onContextMenu={handleContextMenu}
                 />
               );
             } else if (obj.type === 'circle') {
@@ -546,6 +693,7 @@ const Canvas = ({ canvasContext = null, previewObjects = [] }) => {
                   selectedObjects={selectedObjects}
                   onMultiMove={handleMultiObjectMove}
                   onMultiTransform={handleMultiObjectTransform}
+                  onContextMenu={handleContextMenu}
                 />
               );
             } else if (obj.type === 'text') {
@@ -562,6 +710,7 @@ const Canvas = ({ canvasContext = null, previewObjects = [] }) => {
                   selectedObjects={selectedObjects}
                   onMultiMove={handleMultiObjectMove}
                   onMultiTransform={handleMultiObjectTransform}
+                  onContextMenu={handleContextMenu}
                 />
               );
             }
@@ -706,7 +855,7 @@ const Canvas = ({ canvasContext = null, previewObjects = [] }) => {
       {/* Debug info (development only) */}
       {import.meta.env.DEV && (
         <div className="canvas-debug">
-          <div>Zoom: {(zoom * 100).toFixed(0)}% | Objects: {objects.length} | Online: {onlineUsers.length}</div>
+          <div>Zoom: {(zoom * 100).toFixed(0)}% | Objects: {sortedObjects.length} | Online: {onlineUsers.length}</div>
         </div>
       )}
 
@@ -750,6 +899,27 @@ const Canvas = ({ canvasContext = null, previewObjects = [] }) => {
           isVisible={showColorPicker}
         />
       )}
+
+      {/* Context menu - shows on right-click */}
+      <ContextMenu
+        isVisible={contextMenu.isVisible}
+        position={contextMenu.position}
+        targetObject={contextMenu.targetObject}
+        onClose={handleCloseContextMenu}
+        onLayerPositionEdit={handleLayerPositionEdit}
+        onDelete={handleDeleteObject}
+        onDuplicate={handleDuplicateObject}
+        onBringToFront={handleBringToFront}
+        onSendToBack={handleSendToBack}
+      />
+
+      {/* Layer position dialog - shows when editing layer position */}
+      <LayerPositionDialog
+        isVisible={layerPositionDialog.isVisible}
+        targetObject={layerPositionDialog.targetObject}
+        onClose={handleCloseLayerPositionDialog}
+        onApply={handleApplyLayerPosition}
+      />
 
     </div>
   );

@@ -391,6 +391,8 @@ export async function createObject(canvasId, objectData) {
       rotation: objectData.rotation || 0,
       scaleX: objectData.scaleX || 1,
       scaleY: objectData.scaleY || 1,
+      // Layer management
+      layerPosition: objectData.layerPosition || 0, // Default to 0 (foreground)
       // Creation timestamps
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -439,10 +441,11 @@ export async function updateObject(canvasId, objectId, updates, options = {}) {
       lastModifiedByName: userName
     };
     
-    // Add transform-specific metadata if rotation properties are being updated
+    // Add transform-specific metadata if rotation or layer position properties are being updated
     const isRotationUpdate = updates.rotation !== undefined;
+    const isLayerPositionUpdate = updates.layerPosition !== undefined;
     
-    if (isRotationUpdate) {
+    if (isRotationUpdate || isLayerPositionUpdate) {
       updateData.lastTransformBy = userId;
       updateData.lastTransformByName = userName;
       updateData.lastTransformAt = serverTimestamp();
