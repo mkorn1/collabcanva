@@ -152,7 +152,7 @@ const AIAgentPanel = ({
                       message.role === 'user' 
                         ? 'bg-primary-500 text-white rounded-br-sm' 
                         : message.role === 'assistant'
-                        ? 'bg-gray-100 text-gray-800 rounded-bl-sm dark:bg-gray-600 dark:text-gray-100'
+                        ? 'bg-gray-100 text-gray-800 font-bold rounded-bl-sm dark:bg-gray-600 dark:text-white dark:font-bold'
                         : 'bg-red-500/10 text-red-600 rounded-lg text-center text-xs dark:bg-red-500/20 dark:text-red-400'
                     }`}>
                       {message.content}

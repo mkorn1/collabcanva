@@ -437,6 +437,75 @@
   .dark-mode .user-info .auth-button.primary:hover {
     background-color: #5a67d8;
   }
+
+  /* Online Users Indicator Styling */
+  .online-users-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .online-users-indicator .user-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 500;
+    color: #ffffff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    z-index: 1;
+  }
+
+  .online-users-indicator .user-circle:hover {
+    transform: scale(1.1);
+    z-index: 10;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.12);
+  }
+
+  .online-users-indicator .remaining-count {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 500;
+    color: #5f6368;
+    background-color: #f8f9fa;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .online-users-indicator .remaining-count:hover {
+    transform: scale(1.1);
+    background-color: #e8eaed;
+  }
+
+  /* Dark mode styles for online users indicator */
+  .dark-mode .online-users-indicator .user-circle {
+    border-color: #2d3748;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  }
+
+  .dark-mode .online-users-indicator .remaining-count {
+    border-color: #4a5568;
+    background-color: #4a5568;
+    color: #e2e8f0;
+  }
+
+  .dark-mode .online-users-indicator .remaining-count:hover {
+    background-color: #718096;
+  }
 }
 
 /* Custom animations */

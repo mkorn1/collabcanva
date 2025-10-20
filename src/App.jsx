@@ -12,11 +12,17 @@ import AuthForm from './components/Auth/AuthForm'
 import { DarkModeProvider } from './hooks/useDarkMode'
 import DarkModeToggle from './components/Layout/DarkModeToggle'
 
+// Import Collaboration components
+import OnlineUsersIndicator from './components/Collaboration/OnlineUsersIndicator'
+
 // Import Canvas component
 import Canvas from './components/Canvas/Canvas'
 
 // Import Canvas hook for AI integration
 import { useCanvas } from './hooks/useCanvas.js'
+
+// Import presence hook for online users
+import { usePresence } from './hooks/usePresence.js'
 
 // Import AI Agent Panel
 import AIAgentPanel from './components/AI/AIAgentPanel'
@@ -32,6 +38,9 @@ function MainApp() {
   
   // Canvas context for AI integration
   const canvasContext = useCanvas('main', user)
+  
+  // Get presence data for online users
+  const { onlineUsers } = usePresence(user)
   const {
     objects,
     selectedObjectIds,
@@ -72,129 +81,6 @@ function MainApp() {
     } catch (error) {
       console.error('Sign out failed:', error.message)
     }
-  }
-
-  const handleAiSendMessage = async (message) => {
-    // Check if this is an approval response for a pending preview
-    if (pendingCommand && isApprovalResponse(message)) {
-      await handlePreviewApprove(previewData);
-      return;
-    }
-    
-    // Check if this is a rejection response for a pending preview
-    if (pendingCommand && isRejectionResponse(message)) {
-      handlePreviewReject(previewData);
-      return;
-    }
-    
-    // Add user message
-    const userMessage = {
-      role: 'user',
-      content: message,
-      timestamp: new Date()
-    }
-    setAiMessages(prev => [...prev, userMessage])
-    
-    // Process with AI service
-    setAiLoading(true)
-    try {
-      const canvasState = serializeCanvasState()
-      
-      const result = await processCommand(message, canvasState, user?.uid || 'anonymous')
-      
-      console.log('🤖 AI processing result:', result);
-      
-      if (result.success) {
-        console.log('✅ AI processing successful, result type:', result.type);
-        
-        if (result.type === 'function_call') {
-          console.log('🎯 Function call detected, preparing preview...');
-          // AI wants to execute a function - show preview first
-          let functionCalls = [];
-          let summary = result.message;
-          
-          // Handle multi-step commands
-          if (result.functionCall.name === 'multi_step_command') {
-            functionCalls = result.functionCall.arguments.steps || [];
-            summary = `Executing ${functionCalls.length} steps: ${functionCalls.map(step => step.name).join(', ')}`;
-          } else {
-            // Single function call
-            functionCalls = [result.functionCall];
-          }
-          
-          console.log('📋 Function calls to preview:', functionCalls);
-          console.log('📝 Summary:', summary);
-          
-          const aiMessage = {
-            role: 'assistant',
-            content: `I'll execute this command for you. ${summary}`,
-            timestamp: new Date(),
-            functionCall: result.functionCall
-          }
-          setAiMessages(prev => [...prev, aiMessage])
-          
-          // Generate visual preview objects
-          const visualPreviewObjects = generatePreviewObjects(functionCalls, canvasState);
-          
-          // Generate task breakdown
-          const taskAnalysis = analyzeMultipleTasks(functionCalls);
-          
-          // Prepare preview data
-          const preview = {
-            functionCalls: functionCalls,
-            summary: summary,
-            affectedObjects: getAffectedObjectsPreview(functionCalls, canvasState)
-          }
-          
-          console.log('👁️ Preview data prepared:', preview);
-          console.log('👁️ Preview functionCalls:', functionCalls);
-          console.log('👁️ Preview summary:', summary);
-          console.log('🎨 Visual preview objects:', visualPreviewObjects);
-          console.log('📊 Task breakdown:', taskAnalysis);
-          
-          // Show preview overlay
-          setPreviewData(preview)
-          setPreviewObjects(visualPreviewObjects) // Set visual preview objects
-          setTaskBreakdown(taskAnalysis) // Set task breakdown data
-          setPendingCommand(result.functionCall)
-          setPreviewVisible(true)
-          
-          console.log('👁️ Preview should now be visible');
-        } else {
-          console.log('💬 AI provided text response, not function call');
-          // AI provided a text response
-          const aiMessage = {
-            role: 'assistant',
-            content: result.message,
-            timestamp: new Date()
-          }
-          setAiMessages(prev => [...prev, aiMessage])
-        }
-      } else {
-        console.log('❌ AI processing failed:', result.message);
-        // Error response
-        const errorMessage = {
-          role: 'system',
-          content: result.message,
-          timestamp: new Date()
-        }
-        setAiMessages(prev => [...prev, errorMessage])
-      }
-    } catch (error) {
-      console.error('AI processing error:', error)
-      const errorMessage = {
-        role: 'system',
-        content: 'Sorry, I encountered an error processing your request. Please try again.',
-        timestamp: new Date()
-      }
-      setAiMessages(prev => [...prev, errorMessage])
-    } finally {
-      setAiLoading(false)
-    }
-  }
-
-  const handleToggleAiPanel = (isOpen) => {
-    setAiPanelOpen(isOpen)
   }
 
   // Helper function to detect approval responses
@@ -352,6 +238,129 @@ function MainApp() {
     return previewObjects;
   }
 
+  const handleAiSendMessage = async (message) => {
+    // Check if this is an approval response for a pending preview
+    if (pendingCommand && isApprovalResponse(message)) {
+      await handlePreviewApprove(previewData);
+      return;
+    }
+    
+    // Check if this is a rejection response for a pending preview
+    if (pendingCommand && isRejectionResponse(message)) {
+      handlePreviewReject(previewData);
+      return;
+    }
+    
+    // Add user message
+    const userMessage = {
+      role: 'user',
+      content: message,
+      timestamp: new Date()
+    }
+    setAiMessages(prev => [...prev, userMessage])
+    
+    // Process with AI service
+    setAiLoading(true)
+    try {
+      const canvasState = serializeCanvasState()
+      
+      const result = await processCommand(message, canvasState, user?.uid || 'anonymous')
+      
+      console.log('🤖 AI processing result:', result);
+      
+      if (result.success) {
+        console.log('✅ AI processing successful, result type:', result.type);
+        
+        if (result.type === 'function_call') {
+          console.log('🎯 Function call detected, preparing preview...');
+          // AI wants to execute a function - show preview first
+          let functionCalls = [];
+          let summary = result.message;
+          
+          // Handle multi-step commands
+          if (result.functionCall.name === 'multi_step_command') {
+            functionCalls = result.functionCall.arguments.steps || [];
+            summary = `Executing ${functionCalls.length} steps: ${functionCalls.map(step => step.name).join(', ')}`;
+          } else {
+            // Single function call
+            functionCalls = [result.functionCall];
+          }
+          
+          console.log('📋 Function calls to preview:', functionCalls);
+          console.log('📝 Summary:', summary);
+          
+          const aiMessage = {
+            role: 'assistant',
+            content: `I'll execute this command for you. ${summary}`,
+            timestamp: new Date(),
+            functionCall: result.functionCall
+          }
+          setAiMessages(prev => [...prev, aiMessage])
+          
+          // Generate visual preview objects
+          const visualPreviewObjects = generatePreviewObjects(functionCalls, canvasState);
+          
+          // Generate task breakdown
+          const taskAnalysis = analyzeMultipleTasks(functionCalls);
+          
+          // Prepare preview data
+          const preview = {
+            functionCalls: functionCalls,
+            summary: summary,
+            affectedObjects: getAffectedObjectsPreview(functionCalls, canvasState)
+          }
+          
+          console.log('👁️ Preview data prepared:', preview);
+          console.log('👁️ Preview functionCalls:', functionCalls);
+          console.log('👁️ Preview summary:', summary);
+          console.log('🎨 Visual preview objects:', visualPreviewObjects);
+          console.log('📊 Task breakdown:', taskAnalysis);
+          
+          // Show preview overlay
+          setPreviewData(preview)
+          setPreviewObjects(visualPreviewObjects) // Set visual preview objects
+          setTaskBreakdown(taskAnalysis) // Set task breakdown data
+          setPendingCommand(result.functionCall)
+          setPreviewVisible(true)
+          
+          console.log('👁️ Preview should now be visible');
+        } else {
+          console.log('💬 AI provided text response, not function call');
+          // AI provided a text response
+          const aiMessage = {
+            role: 'assistant',
+            content: result.message,
+            timestamp: new Date()
+          }
+          setAiMessages(prev => [...prev, aiMessage])
+        }
+      } else {
+        console.log('❌ AI processing failed:', result.message);
+        // Error response
+        const errorMessage = {
+          role: 'system',
+          content: result.message,
+          timestamp: new Date()
+        }
+        setAiMessages(prev => [...prev, errorMessage])
+      }
+    } catch (error) {
+      console.error('AI processing error:', error)
+      const errorMessage = {
+        role: 'system',
+        content: 'Sorry, I encountered an error processing your request. Please try again.',
+        timestamp: new Date()
+      }
+      setAiMessages(prev => [...prev, errorMessage])
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
+  const handleToggleAiPanel = (isOpen) => {
+    setAiPanelOpen(isOpen)
+  }
+
   // Handle preview approval
   const handlePreviewApprove = async (previewData) => {
     if (!pendingCommand) return;
@@ -507,6 +516,12 @@ function MainApp() {
         </div>
         
         <div className="header-controls">
+          {/* Online users indicator */}
+          <OnlineUsersIndicator 
+            onlineUsers={onlineUsers} 
+            currentUserId={user?.uid}
+            maxVisible={5}
+          />
           {user?.cursorColor && (
             <div className="cursor-indicator">
               <div 
