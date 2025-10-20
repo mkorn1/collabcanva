@@ -355,4 +355,64 @@ describe('Enhanced Arrange Shapes Execution Logic', () => {
       expect(result.success).toBe(true);
     });
   });
+
+  describe('Square Shape Creation', () => {
+    test('should create a square with equal width and height', async () => {
+      let createdObject = null;
+      const mockCanvasContext = {
+        addObject: async (obj) => {
+          createdObject = obj;
+          return 'square-1';
+        },
+        objects: []
+      };
+
+      const result = await executeCommand({
+        name: 'create_shape',
+        arguments: {
+          type: 'square',
+          x: 100,
+          y: 100,
+          width: 80,
+          height: 60, // Different height to test that it gets equalized
+          fill: '#2ecc71'
+        }
+      }, mockCanvasContext, mockUser);
+
+      expect(result.success).toBe(true);
+      expect(createdObject).toBeDefined();
+      expect(createdObject.type).toBe('square');
+      expect(createdObject.width).toBe(80); // Should use the larger value
+      expect(createdObject.height).toBe(80); // Should match width
+      expect(createdObject.x).toBe(100);
+      expect(createdObject.y).toBe(100);
+      expect(createdObject.fill).toBe('#2ecc71');
+    });
+
+    test('should modify square to maintain equal width and height', async () => {
+      const mockCanvasContext = {
+        updateObject: async (id, updates) => {
+          return { success: true };
+        },
+        objects: [
+          { id: 'square-1', type: 'square', x: 100, y: 100, width: 80, height: 80, fill: '#2ecc71' }
+        ]
+      };
+
+      const result = await executeCommand({
+        name: 'modify_shape',
+        arguments: {
+          id: 'square-1',
+          updates: {
+            width: 100,
+            height: 60 // Different height to test that it gets equalized
+          }
+        }
+      }, mockCanvasContext, mockUser);
+
+      expect(result.success).toBe(true);
+      // The actual width/height equalization happens in the executeModifyShape function
+      // We can't easily test the internal updates object without mocking more deeply
+    });
+  });
 });

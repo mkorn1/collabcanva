@@ -74,7 +74,7 @@ const AIAgentPanel = ({
 
   return (
     <div 
-      className={`fixed bottom-5 right-5 w-96 h-96 z-[1000] bg-white/95 backdrop-blur-md border border-gray-200 rounded-2xl shadow-xl font-sans select-none transition-all duration-300 ease-out flex flex-col overflow-hidden ${
+      className={`fixed bottom-5 right-5 w-96 h-96 z-[1000] bg-white/95 backdrop-blur-md border border-gray-200 rounded-2xl shadow-xl font-sans transition-all duration-300 ease-out flex flex-col overflow-hidden ${
         isOpen ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
       } ${isMinimized ? 'h-15' : ''} hover:shadow-2xl dark:bg-gray-700/95 dark:border-gray-600 dark:hover:shadow-3xl`}
       role="dialog"
@@ -148,7 +148,7 @@ const AIAgentPanel = ({
                     role="log"
                     aria-label={`${message.role} message`}
                   >
-                    <div className={`px-4 py-3 rounded-2xl text-sm leading-relaxed break-words relative ${
+                    <div className={`px-4 py-3 rounded-2xl text-sm leading-relaxed break-words relative select-text ${
                       message.role === 'user' 
                         ? 'bg-primary-500 text-white rounded-br-sm' 
                         : message.role === 'assistant'
@@ -184,7 +184,7 @@ const AIAgentPanel = ({
             <div className="flex items-end gap-3 bg-black/2 border border-black/10 rounded-xl px-3 py-2 transition-all duration-150 ease-out focus-within:border-primary-500 focus-within:shadow-[0_0_0_3px_rgba(102,126,234,0.1)] dark:bg-white/5 dark:border-gray-600/30 dark:focus-within:border-primary-500 dark:focus-within:shadow-[0_0_0_3px_rgba(102,126,234,0.2)]">
               <textarea
                 ref={inputRef}
-                className="flex-1 border-0 bg-transparent text-sm leading-relaxed text-gray-700 resize-none outline-none font-inherit min-h-5 max-h-30 overflow-y-auto dark:text-gray-200"
+                className="flex-1 border-0 bg-transparent text-sm leading-relaxed text-gray-700 resize-none outline-none font-inherit min-h-5 max-h-30 overflow-y-auto dark:text-gray-200 select-text"
                 value={inputValue}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyPress}

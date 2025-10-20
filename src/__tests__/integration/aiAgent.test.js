@@ -472,8 +472,7 @@ describe('AI Agent Integration Tests', () => {
               })
             }
           }]
-        }]
-      });
+        });
 
       const result = await processCommand('change the red rectangle to green', mockCanvasState, mockUser.uid);
       

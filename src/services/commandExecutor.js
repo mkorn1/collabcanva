@@ -6,6 +6,7 @@
  */
 
 import { createLayoutTemplate } from './layoutTemplates';
+import { generateRandomSize } from './smartDefaults.js';
 
 /**
  * Error types for better error categorization
@@ -389,11 +390,11 @@ async function executeCreateShape(args, canvasContext, user) {
   console.log('✅ Validation passed');
   
   // Validate object type
-  if (!['rectangle', 'circle', 'text'].includes(args.type)) {
+  if (!['rectangle', 'circle', 'text', 'square'].includes(args.type)) {
     console.log('❌ Invalid object type:', args.type);
     return {
       success: false,
-      message: `Invalid object type: ${args.type}. Must be rectangle, circle, or text`,
+      message: `Invalid object type: ${args.type}. Must be rectangle, circle, text, or square`,
       type: 'error'
     };
   }
@@ -426,6 +427,14 @@ async function executeCreateShape(args, canvasContext, user) {
   // Ensure circles are square
   if (args.type === 'circle') {
     newObject.height = newObject.width;
+  }
+  
+  // Ensure squares have equal width and height
+  if (args.type === 'square') {
+    // Use the larger of width or height to ensure the square is visible
+    const size = Math.max(newObject.width, newObject.height);
+    newObject.width = size;
+    newObject.height = size;
   }
   
   try {
@@ -502,9 +511,33 @@ async function executeModifyShape(args, canvasContext, user) {
     updates.height = Math.max(10, args.updates.height);
   }
   
+  // Handle random size requests
+  if (args.updates.randomSize === true) {
+    console.log('🎲 Applying random size to object:', object.id);
+    const randomSize = generateRandomSize(object.type);
+    updates.width = randomSize.width;
+    updates.height = randomSize.height;
+  }
+  
   // Ensure circles remain square
   if (object.type === 'circle' && updates.width !== undefined) {
     updates.height = updates.width;
+  }
+  
+  // Ensure squares remain square
+  if (object.type === 'square') {
+    if (updates.width !== undefined && updates.height !== undefined) {
+      // If both are being updated, use the larger value
+      const size = Math.max(updates.width, updates.height);
+      updates.width = size;
+      updates.height = size;
+    } else if (updates.width !== undefined) {
+      // If only width is updated, set height to match
+      updates.height = updates.width;
+    } else if (updates.height !== undefined) {
+      // If only height is updated, set width to match
+      updates.width = updates.height;
+    }
   }
   
   // Styling updates

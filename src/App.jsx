@@ -279,7 +279,12 @@ function MainApp() {
           
           // Handle multi-step commands
           if (result.functionCall.name === 'multi_step_command') {
-            functionCalls = result.functionCall.arguments.steps || [];
+            const steps = result.functionCall.arguments.steps || [];
+            // Ensure steps have the correct structure for generatePreviewObjects
+            functionCalls = steps.map(step => ({
+              name: step.name,
+              arguments: step.arguments
+            }));
             summary = `Executing ${functionCalls.length} steps: ${functionCalls.map(step => step.name).join(', ')}`;
           } else {
             // Single function call

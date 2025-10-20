@@ -45,6 +45,58 @@ export const SIZE_PRESETS = {
 };
 
 /**
+ * Generates random sizes for different shape types
+ * @param {string} shapeType - Type of shape
+ * @param {Object} options - Random size options
+ * @returns {Object} - Random size object
+ */
+export function generateRandomSize(shapeType = 'rectangle', options = {}) {
+  const {
+    minWidth = 20,
+    maxWidth = 300,
+    minHeight = 15,
+    maxHeight = 200,
+    maintainAspectRatio = false,
+    aspectRatio = 1.6 // Default rectangle aspect ratio
+  } = options;
+
+  console.log('🎲 Generating random size for:', { shapeType, options });
+
+  let width, height;
+
+  if (shapeType === 'circle' || shapeType === 'square') {
+    // For circles and squares, width and height should be equal
+    const size = Math.floor(Math.random() * (maxWidth - minWidth + 1)) + minWidth;
+    width = size;
+    height = size;
+  } else if (shapeType === 'text') {
+    // For text, generate reasonable text dimensions
+    width = Math.floor(Math.random() * (400 - 80 + 1)) + 80;
+    height = Math.floor(Math.random() * (100 - 20 + 1)) + 20;
+  } else {
+    // For rectangles and other shapes
+    if (maintainAspectRatio) {
+      width = Math.floor(Math.random() * (maxWidth - minWidth + 1)) + minWidth;
+      height = Math.floor(width / aspectRatio);
+      // Ensure height is within bounds
+      height = Math.max(minHeight, Math.min(maxHeight, height));
+    } else {
+      width = Math.floor(Math.random() * (maxWidth - minWidth + 1)) + minWidth;
+      height = Math.floor(Math.random() * (maxHeight - minHeight + 1)) + minHeight;
+    }
+  }
+
+  // Ensure minimum sizes are respected
+  width = Math.max(10, width);
+  height = Math.max(10, height);
+
+  const randomSize = { width, height };
+  console.log('🎲 Generated random size:', randomSize);
+  
+  return randomSize;
+}
+
+/**
  * Analyzes canvas state to determine smart defaults
  * @param {Object} canvasState - Current canvas state
  * @param {string} shapeType - Type of shape being created
@@ -108,6 +160,12 @@ function getSmartSize(objects, shapeType, userIntent) {
   
   // If user specified size, use it
   if (userIntent.size) {
+    // Handle random size requests
+    if (userIntent.size === 'random') {
+      console.log('🎲 Using random size generation');
+      return generateRandomSize(shapeType);
+    }
+    
     const preset = SIZE_PRESETS[userIntent.size];
     if (preset && preset[shapeType]) {
       console.log('📏 Using user-specified size preset:', preset[shapeType]);
@@ -904,6 +962,24 @@ function extractColorIntent(command) {
  * @returns {string|null} - Size intent
  */
 function extractSizeIntent(command) {
+  // Check for random size requests first
+  const randomPatterns = [
+    /random\s+(size|sizes)/,
+    /randomly\s+(resize|size)/,
+    /random\s+(width|height)/,
+    /random\s+(dimensions?)/,
+    /make\s+(them|it)\s+random\s+(size|sizes)/,
+    /resize\s+(to\s+)?random/,
+    /random\s+(resize|sizing)/
+  ];
+  
+  for (const pattern of randomPatterns) {
+    if (pattern.test(command)) {
+      console.log('🎲 Detected random size request');
+      return 'random';
+    }
+  }
+  
   // Direct size keyword matching
   const sizeKeywords = Object.keys(SIZE_PRESETS);
   

@@ -56,7 +56,7 @@ const SYSTEM_PROMPT = `You are an AI assistant that helps users manipulate a col
 - Make intelligent decisions based on canvas context
 
 ## Available Operations
-1. create_shape(type, x, y, width, height, fill, text_content?) - Create rectangles, circles, or text
+1. create_shape(type, x, y, width, height, fill, text_content?) - Create rectangles, circles, squares, or text
 2. modify_shape(id, updates) - Change properties of existing shapes
 3. delete_shape(id) - Remove shapes from canvas
 4. arrange_shapes(ids, layout, options?) - Organize shapes (row, column, grid, distribute_h, distribute_v, circle, spiral, flow, hexagon, diamond, wave, zigzag, radial, fibonacci)
@@ -91,6 +91,7 @@ You have access to intelligent defaults for colors, sizes, positions, and spacin
 
 ## Key Conversions
 - Circles: radius → diameter (radius * 2)
+- Squares: Always set width = height for square shapes
 - Colors: Accept names (red, blue) and hex codes (#FF0000)
 - Positions: Convert relative terms ("next to", "below") to coordinates
 - Sizes: Convert descriptive terms ("small", "large") to pixels
@@ -100,6 +101,7 @@ You have access to intelligent defaults for colors, sizes, positions, and spacin
 ### Single Shape Creation
 - "create a red circle" → create_shape("circle", 400, 300, 80, 80, "#e74c3c")
 - "add blue rectangle at center" → create_shape("rectangle", 960, 540, 100, 60, "#3498db")
+- "create a green square" → create_shape("square", 400, 300, 80, 80, "#2ecc71")
 - "make text box below title" → create_shape("text", x, y, 200, 40, "#2c3e50", "New Text", null, null, null, "below", "title")
 
 ### Multiple Shape Creation (Use multi_step_command)
@@ -112,6 +114,8 @@ You have access to intelligent defaults for colors, sizes, positions, and spacin
 - "move red circle to 500, 400" → modify_shape("circle_id", {x: 500, y: 400})
 - "make circle bigger" → modify_shape("circle_id", {width: 120, height: 120})
 - "change circle to green" → modify_shape("circle_id", {fill: "#2ecc71"})
+- "resize to random sizes" → modify_shape("shape_id", {randomSize: true})
+- "make them random sizes" → modify_shape("shape_id", {randomSize: true})
 
 ### Layout
 - "arrange in row" → arrange_shapes(["selected_id1", "selected_id2"], "row") // Uses selected objects when none specified
@@ -138,11 +142,16 @@ function resolveObjectReferences(functionCall, canvasState) {
   const { name, arguments: args } = functionCall;
   const resolvedArgs = { ...args };
   
+  // Handle case where args might be undefined
+  if (!args) {
+    return functionCall;
+  }
+  
   // Handle different function types that might have object references
   switch (name) {
     case 'create_shape':
       // Resolve relative positioning
-      if (args.position && typeof args.position === 'string') {
+      if (args && args.position && typeof args.position === 'string') {
         const resolvedPosition = resolveRelativePosition(
           args.position, 
           canvasState.objects, 
@@ -255,7 +264,7 @@ function resolveObjectReferences(functionCall, canvasState) {
       
     case 'multi_step_command':
       // Resolve object references in each step
-      if (args.steps && Array.isArray(args.steps)) {
+      if (args && args.steps && Array.isArray(args.steps)) {
         resolvedArgs.steps = args.steps.map(step => 
           resolveObjectReferences(step, canvasState)
         );
@@ -796,6 +805,58 @@ function getSpacingDescription(spacing) {
 }
 
 /**
+ * Calculates position for a specific step in a multi-step command
+ * @param {Object} smartDefaults - Base smart defaults
+ * @param {number} stepIndex - Index of current step (0-based)
+ * @param {number} totalSteps - Total number of steps
+ * @param {Object} canvasState - Canvas state
+ * @returns {Object} - Smart defaults with calculated position for this step
+ */
+function calculateStepPosition(smartDefaults, stepIndex, totalSteps, canvasState) {
+  const stepDefaults = { ...smartDefaults };
+  
+  // Calculate spacing between shapes with fallback values
+  const spacing = smartDefaults.spacing || 20;
+  const shapeWidth = smartDefaults.size?.width || 100;
+  const shapeHeight = smartDefaults.size?.height || 100;
+  
+  // Ensure we have a valid position to start from
+  const baseX = smartDefaults.position?.x || 100;
+  const baseY = smartDefaults.position?.y || 100;
+  
+  // Determine layout based on total steps and user intent
+  if (totalSteps <= 3) {
+    // Horizontal row for small numbers
+    stepDefaults.position = {
+      x: baseX + (stepIndex * (shapeWidth + spacing)),
+      y: baseY
+    };
+  } else if (totalSteps <= 6) {
+    // 2-row grid for medium numbers
+    const itemsPerRow = Math.ceil(totalSteps / 2);
+    const row = Math.floor(stepIndex / itemsPerRow);
+    const col = stepIndex % itemsPerRow;
+    
+    stepDefaults.position = {
+      x: baseX + (col * (shapeWidth + spacing)),
+      y: baseY + (row * (shapeHeight + spacing))
+    };
+  } else {
+    // 3-row grid for large numbers
+    const itemsPerRow = Math.ceil(totalSteps / 3);
+    const row = Math.floor(stepIndex / itemsPerRow);
+    const col = stepIndex % itemsPerRow;
+    
+    stepDefaults.position = {
+      x: baseX + (col * (shapeWidth + spacing)),
+      y: baseY + (row * (shapeHeight + spacing))
+    };
+  }
+  
+  return stepDefaults;
+}
+
+/**
  * Applies smart defaults to function call arguments
  * @param {Object} functionCall - Original function call
  * @param {Object} userIntent - Extracted user intent
@@ -819,6 +880,31 @@ function applySmartDefaultsToFunctionCall(functionCall, userIntent, smartDefault
       
     case 'arrange_shapes':
       enhancedArgs = applySmartDefaultsToArrangeShapes(enhancedArgs, userIntent, smartDefaults, canvasState);
+      break;
+    
+    case 'multi_step_command':
+      // Apply smart defaults to each step in the multi-step command
+      if (enhancedArgs.steps && Array.isArray(enhancedArgs.steps)) {
+        enhancedArgs.steps = enhancedArgs.steps.map((step, index) => {
+          // Ensure we have valid smart defaults before calculating position
+          const safeSmartDefaults = {
+            color: smartDefaults.color || '#3498db',
+            size: smartDefaults.size || { width: 100, height: 100 },
+            position: smartDefaults.position || { x: 100, y: 100 },
+            spacing: smartDefaults.spacing || 20
+          };
+          
+          // Create modified smart defaults with calculated position for this step
+          const stepSmartDefaults = calculateStepPosition(safeSmartDefaults, index, enhancedArgs.steps.length, canvasState);
+          
+          return applySmartDefaultsToFunctionCall(
+            { name: step.name, arguments: step.arguments },
+            userIntent,
+            stepSmartDefaults,
+            canvasState
+          );
+        });
+      }
       break;
       
     // delete_shape doesn't need smart defaults
@@ -1218,8 +1304,8 @@ export async function processCommand(command, canvasState = {}, userId = 'defaul
             properties: {
               type: {
                 type: 'string',
-                enum: ['rectangle', 'circle', 'text'],
-                description: 'Type of shape to create: rectangle (rectangular shape), circle (circular shape), text (text element)'
+                enum: ['rectangle', 'circle', 'text', 'square'],
+                description: 'Type of shape to create: rectangle (rectangular shape), circle (circular shape), text (text element), square (rectangle with equal width and height)'
               },
               x: {
                 type: 'number',
@@ -1380,6 +1466,10 @@ export async function processCommand(command, canvasState = {}, userId = 'defaul
                   position: {
                     type: 'string',
                     description: 'Relative position command for moving the shape. Options: "center", "top-left", "top-right", "bottom-left", "bottom-right", "top", "bottom", "left", "right", "next to", "below", "above", "to the left", "to the right", "near". When using relative positioning, x and y will be automatically calculated.'
+                  },
+                  randomSize: {
+                    type: 'boolean',
+                    description: 'Set to true to apply random dimensions to the shape. When true, width and height will be randomly generated based on the shape type. This overrides any specific width/height values.'
                   }
                 }
               }
@@ -1546,6 +1636,11 @@ export async function processCommand(command, canvasState = {}, userId = 'defaul
       const enhancedFunctionCall = applySmartDefaultsToFunctionCall(functionCall, userIntent, smartDefaults, canvasState);
       
       console.log('✨ Enhanced Function Call (after smart defaults):', enhancedFunctionCall);
+      
+      // Extra logging for multi-step commands
+      if (enhancedFunctionCall.name === 'multi_step_command') {
+        console.log('🔄 Multi-step command steps:', enhancedFunctionCall.arguments.steps);
+      }
       
       // Resolve object references (convert descriptions to IDs)
       const resolvedFunctionCall = resolveObjectReferences(enhancedFunctionCall, canvasState);
