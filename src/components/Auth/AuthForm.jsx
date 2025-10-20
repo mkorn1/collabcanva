@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import Login from './Login';
 import Signup from './Signup';
-import './Auth.css';
 
 export default function AuthForm({ onAuthSuccess, defaultMode = 'login' }) {
   const [mode, setMode] = useState(defaultMode); // 'login' or 'signup'
@@ -23,7 +22,7 @@ export default function AuthForm({ onAuthSuccess, defaultMode = 'login' }) {
   };
 
   return (
-    <div className="auth-wrapper">
+    <div>
       {mode === 'login' ? (
         <Login 
           onToggleMode={toggleMode}
@@ -38,17 +37,10 @@ export default function AuthForm({ onAuthSuccess, defaultMode = 'login' }) {
       
       {/* Demo Mode Toggle (for development/testing) */}
       {import.meta.env.DEV && (
-        <div className="demo-controls">
+        <div>
           <button 
             onClick={toggleMode}
-            className="auth-button secondary"
-            style={{ 
-              position: 'fixed', 
-              bottom: '20px', 
-              right: '20px',
-              fontSize: '0.75rem',
-              padding: '0.5rem'
-            }}
+            className="fixed bottom-5 right-5 text-xs px-2 py-2 bg-gray-200 text-gray-600 hover:bg-gray-300 rounded-md transition-colors duration-200"
           >
             Switch to {mode === 'login' ? 'Signup' : 'Login'}
           </button>

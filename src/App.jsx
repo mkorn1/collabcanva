@@ -516,6 +516,13 @@ function MainApp() {
               <span className="cursor-label">Your cursor</span>
             </div>
           )}
+          <button 
+            onClick={() => setAiPanelOpen(true)}
+            className="px-3 py-1.5 bg-primary-500 hover:bg-primary-600 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+            title="Open AI Assistant (Cmd+K)"
+          >
+            🤖 AI
+          </button>
           <DarkModeToggle />
           <button 
             onClick={handleSignOut}

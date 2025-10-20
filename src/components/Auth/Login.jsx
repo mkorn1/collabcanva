@@ -1,7 +1,6 @@
 // Login component for user authentication
 import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth.jsx';
-import './Auth.css';
 
 export default function Login({ onToggleMode, onSuccess }) {
   const { signIn, loading, error, clearError } = useAuth();
@@ -96,17 +95,17 @@ export default function Login({ onToggleMode, onSuccess }) {
   const isFormValid = formData.email && formData.password && !Object.keys(validationErrors).length;
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <div className="auth-header">
-          <h2>Welcome Back</h2>
-          <p>Sign in to continue to CollabCanvas</p>
+    <div className="flex justify-center items-center min-h-screen p-8 bg-gradient-to-br from-primary-500 to-purple-600">
+      <div className="bg-white rounded-xl p-10 shadow-auth-card w-full max-w-md animate-slide-up">
+        <div className="text-center mb-8">
+          <h2 className="text-gray-700 text-3xl font-semibold mb-2 m-0">Welcome Back</h2>
+          <p className="text-gray-500 text-base m-0">Sign in to continue to CollabCanvas</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="auth-form">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
           {/* Email Field */}
-          <div className="form-group">
-            <label htmlFor="email" className="form-label">
+          <div className="flex flex-col gap-2">
+            <label htmlFor="email" className="text-sm font-medium text-gray-700 m-0">
               Email Address
             </label>
             <input
@@ -115,19 +114,19 @@ export default function Login({ onToggleMode, onSuccess }) {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className={`form-input ${validationErrors.email ? 'error' : ''}`}
+              className={`px-4 py-3 border-2 rounded-lg text-base transition-all duration-200 bg-white text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-primary-500 focus:shadow-[0_0_0_3px_rgba(102,126,234,0.1)] disabled:bg-gray-50 ${validationErrors.email ? 'border-red-500' : 'border-gray-200'}`}
               placeholder="Enter your email"
               disabled={loading || isSubmitting}
               autoComplete="email"
             />
             {validationErrors.email && (
-              <span className="error-message">{validationErrors.email}</span>
+              <span className="text-red-500 text-sm mt-1">{validationErrors.email}</span>
             )}
           </div>
 
           {/* Password Field */}
-          <div className="form-group">
-            <label htmlFor="password" className="form-label">
+          <div className="flex flex-col gap-2">
+            <label htmlFor="password" className="text-sm font-medium text-gray-700 m-0">
               Password
             </label>
             <input
@@ -136,20 +135,20 @@ export default function Login({ onToggleMode, onSuccess }) {
               name="password"
               value={formData.password}
               onChange={handleChange}
-              className={`form-input ${validationErrors.password ? 'error' : ''}`}
+              className={`px-4 py-3 border-2 rounded-lg text-base transition-all duration-200 bg-white text-gray-700 placeholder:text-gray-400 focus:outline-none focus:border-primary-500 focus:shadow-[0_0_0_3px_rgba(102,126,234,0.1)] disabled:bg-gray-50 ${validationErrors.password ? 'border-red-500' : 'border-gray-200'}`}
               placeholder="Enter your password"
               disabled={loading || isSubmitting}
               autoComplete="current-password"
             />
             {validationErrors.password && (
-              <span className="error-message">{validationErrors.password}</span>
+              <span className="text-red-500 text-sm mt-1">{validationErrors.password}</span>
             )}
           </div>
 
           {/* Global Error Display */}
           {error && (
-            <div className="error-banner">
-              <span className="error-icon">⚠️</span>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-2 text-red-700">
+              <span className="text-lg">⚠️</span>
               {error}
             </div>
           )}
@@ -157,12 +156,16 @@ export default function Login({ onToggleMode, onSuccess }) {
           {/* Submit Button */}
           <button
             type="submit"
-            className={`auth-button primary ${!isFormValid || loading || isSubmitting ? 'disabled' : ''}`}
+            className={`w-full py-3 px-4 rounded-lg font-medium text-base transition-all duration-200 flex items-center justify-center gap-2 ${
+              !isFormValid || loading || isSubmitting 
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                : 'bg-primary-500 text-white hover:bg-primary-600 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0'
+            }`}
             disabled={!isFormValid || loading || isSubmitting}
           >
             {isSubmitting ? (
               <>
-                <span className="spinner"></span>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                 Signing In...
               </>
             ) : (
@@ -172,13 +175,13 @@ export default function Login({ onToggleMode, onSuccess }) {
         </form>
 
         {/* Toggle to Signup */}
-        <div className="auth-footer">
-          <p>
+        <div className="mt-6 text-center">
+          <p className="text-gray-600 text-sm">
             Don't have an account?{' '}
             <button
               type="button"
               onClick={onToggleMode}
-              className="auth-link"
+              className="text-primary-500 hover:text-primary-600 font-medium underline-offset-2 hover:underline transition-colors duration-200 bg-transparent border-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={loading || isSubmitting}
             >
               Create Account

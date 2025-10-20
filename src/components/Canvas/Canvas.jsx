@@ -751,47 +751,6 @@ const Canvas = ({ canvasContext = null, previewObjects = [] }) => {
         />
       )}
 
-      {/* TEMPORARY TEST BUTTON FOR TOOLTIPS */}
-      {import.meta.env.DEV && (
-        <button 
-          onClick={() => {
-            // Force visual feedback on the first object
-            if (objects.length > 0) {
-              const firstObject = objects[0];
-              updateObject(firstObject.id, {
-                lastModifiedByName: user?.displayName || user?.email || 'Test User',
-                lastModified: Date.now(),
-                _conflictResolved: true,
-                _lastEditorColor: '#ff6b6b'
-              });
-              console.log('🧪 Test tooltip applied to:', firstObject.id, firstObject);
-            } else {
-              console.log('🧪 No objects to test tooltip on. Create a shape first!');
-            }
-          }}
-          style={{
-            position: 'absolute',
-            top: '10px',
-            right: '10px',
-            padding: '8px 12px',
-            backgroundColor: '#28a745',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            zIndex: 1000,
-            fontSize: '12px',
-            fontWeight: 'bold'
-          }}
-        >
-          🧪 Test Tooltip
-        </button>
-      )}
-
-      {/* PERFORMANCE MONITORING DISPLAY */}
-      {import.meta.env.DEV && (
-        <PerformanceStats />
-      )}
     </div>
   );
 };

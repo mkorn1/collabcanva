@@ -1,115 +1,97 @@
-:root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@import "tailwindcss";
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  -webkit-text-size-adjust: 100%;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  color: inherit;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
+@layer base {
   :root {
-    color: #213547;
+    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+    color-scheme: light dark;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    display: flex;
+    place-items: center;
+    min-width: 320px;
+    min-height: 100vh;
+  }
+
+  h1 {
+    font-size: 3.2em;
+    line-height: 1.1;
+  }
+
+  button {
+    border-radius: 8px;
+    border: 1px solid transparent;
+    padding: 0.6em 1.2em;
+    font-size: 1em;
+    font-weight: 500;
+    font-family: inherit;
+    background-color: #1a1a1a;
+    color: inherit;
+    cursor: pointer;
+    transition: border-color 0.25s;
+  }
+
+  button:hover {
+    border-color: #667eea;
+  }
+
+  button:focus,
+  button:focus-visible {
+    outline: 4px auto -webkit-focus-ring-color;
+  }
+
+  /* Form input overrides */
+  input {
+    color: #2d3748;
     background-color: #ffffff;
   }
-  a:hover {
-    color: #747bff;
+
+  input:focus {
+    color: #2d3748;
+    background-color: #ffffff;
   }
-  button {
-    background-color: #f9f9f9;
+}
+
+@layer components {
+  /* Auth container inputs */
+  .auth-container input {
+    color: #2d3748;
+    background-color: #ffffff;
   }
-}
 
-/* Override for form inputs to ensure dark text on white background */
-input {
-  color: #2d3748 !important;
-  background-color: #ffffff !important;
-}
+  /* App content styling */
+  .App {
+    color: #2d3748;
+  }
 
-input:focus {
-  color: #2d3748 !important;
-  background-color: #ffffff !important;
-}
+  .App h1, .App h2, .App h3, .App h4, .App h5, .App h6 {
+    color: #2d3748;
+  }
 
-/* Specifically target auth form inputs */
-.auth-container input {
-  color: #2d3748 !important;
-  background-color: #ffffff !important;
-}
+  .App p, .App div, .App span {
+    color: #2d3748;
+  }
 
-/* Fix text colors for main app content */
-.App {
-  color: #2d3748 !important;
-}
+  /* User info styling */
+  .user-info, .user-info * {
+    color: #2d3748;
+  }
 
-.App h1, .App h2, .App h3, .App h4, .App h5, .App h6 {
-  color: #2d3748 !important;
-}
+  .user-details, .user-details * {
+    color: #2d3748;
+  }
 
-.App p, .App div, .App span {
-  color: #2d3748 !important;
-}
-
-/* Main app content after login */
-.user-info, .user-info * {
-  color: #2d3748 !important;
-}
-
-.user-details, .user-details * {
-  color: #2d3748 !important;
-}
-
-.card, .card * {
-  color: #2d3748 !important;
+  .card, .card * {
+    color: #2d3748;
+  }
 }
 
 .read-the-docs {

@@ -1,5 +1,4 @@
 import React from 'react';
-import './TaskBreakdown.css';
 
 /**
  * Task Breakdown Component
@@ -21,87 +20,70 @@ const TaskBreakdown = ({
 
   return (
     <div 
-      className={`task-breakdown ${position} ${isVisible ? 'visible' : ''}`}
+      className={`fixed z-[1000] bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl shadow-lg p-4 max-w-sm transition-all duration-300 ease-out ${
+        position === 'top-right' ? 'top-20 right-5' : 
+        position === 'top-left' ? 'top-20 left-5' : 
+        position === 'bottom-right' ? 'bottom-20 right-5' : 
+        'bottom-20 left-5'
+      } ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'} dark:bg-gray-700/95 dark:border-gray-600`}
       role="dialog"
       aria-label="Task Breakdown"
     >
       {/* Header */}
-      <div className="task-breakdown-header">
-        <div className="task-summary">
-          <span className="task-count">{totalTasks}</span>
-          <span className="task-label">tasks</span>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-baseline gap-1">
+          <span className="text-2xl font-bold text-gray-800 dark:text-gray-100">{totalTasks}</span>
+          <span className="text-sm text-gray-600 dark:text-gray-300">tasks</span>
         </div>
         <div 
-          className={`complexity-badge ${complexity}`}
-          style={{ 
-            color: complexityStyle.color,
-            backgroundColor: complexityStyle.backgroundColor 
-          }}
+          className={`px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 ${
+            complexity === 'low' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+            complexity === 'medium' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+            'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+          }`}
         >
-          <span className="complexity-icon">{complexityStyle.icon}</span>
-          <span className="complexity-label">{complexityStyle.label}</span>
+          <span className="text-xs">{complexityStyle.icon}</span>
+          <span>{complexityStyle.label}</span>
         </div>
       </div>
 
       {/* Task Details */}
-      <div className="task-details">
-        <div className="task-summary-text">{summary}</div>
+      <div className="space-y-3">
+        <div className="text-sm text-gray-600 dark:text-gray-300">{summary}</div>
         
         {/* Show detailed step breakdown for multi-step commands */}
-        {isMultiStep && detailedSteps && (
-          <div className="step-breakdown-detailed">
-            <div className="step-breakdown-header">Step Breakdown:</div>
-            <div className="step-list">
-              {detailedSteps.map((step) => (
-                <div key={step.stepNumber} className="step-item">
-                  <div className="step-header">
-                    <span className="step-number">Step {step.stepNumber}:</span>
-                    <span className="step-function">{step.functionName}</span>
-                    <span className="step-task-count">({step.totalTasks} task{step.totalTasks !== 1 ? 's' : ''})</span>
-                  </div>
-                  {step.tasks.length <= 3 && (
-                    <div className="step-tasks">
-                      {step.tasks.map((task, index) => (
-                        <div key={task.id} className="step-task-item">
-                          <span className="step-task-bullet">•</span>
-                          <span className="step-task-description">{task.description}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
+        {isMultiStep && detailedSteps && detailedSteps.length > 0 && (
+          <div className="space-y-2">
+            <div className="text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wide">
+              Step-by-step breakdown:
             </div>
-          </div>
-        )}
-        
-        {/* Show detailed breakdown for complex tasks (non-multi-step) */}
-        {!isMultiStep && complexity === 'complex' && tasks.length <= 10 && (
-          <div className="task-list">
-            <div className="task-list-header">Task Breakdown:</div>
-            <div className="task-items">
-              {tasks.slice(0, 5).map((task, index) => (
-                <div key={task.id} className="task-item">
-                  <span className="task-number">{index + 1}.</span>
-                  <span className="task-description">{task.description}</span>
+            <div className="space-y-1">
+              {detailedSteps.map((step, index) => (
+                <div key={index} className="flex items-start gap-2 text-xs">
+                  <span className="flex-shrink-0 w-5 h-5 bg-primary-500 text-white rounded-full flex items-center justify-center text-xs font-medium">
+                    {index + 1}
+                  </span>
+                  <span className="text-gray-600 dark:text-gray-300 leading-relaxed">{step}</span>
                 </div>
               ))}
-              {tasks.length > 5 && (
-                <div className="task-item task-more">
-                  <span className="task-more-text">... and {tasks.length - 5} more tasks</span>
-                </div>
-              )}
             </div>
           </div>
         )}
 
-        {/* Show step breakdown for multi-step commands */}
-        {isMultiStep && (
-          <div className="step-breakdown">
-            <div className="step-info">
-              <span className="step-icon">🔄</span>
-              <span className="step-text">{stepCount} steps</span>
+        {/* Show task list for single-step commands */}
+        {!isMultiStep && tasks && tasks.length > 0 && (
+          <div className="space-y-1">
+            <div className="text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wide">
+              Tasks to execute:
             </div>
+            <ul className="space-y-1">
+              {tasks.map((task, index) => (
+                <li key={index} className="flex items-start gap-2 text-xs">
+                  <span className="flex-shrink-0 w-1.5 h-1.5 bg-primary-500 rounded-full mt-1.5"></span>
+                  <span className="text-gray-600 dark:text-gray-300">{task}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </div>
@@ -109,52 +91,48 @@ const TaskBreakdown = ({
   );
 };
 
-// Helper functions (imported from taskAnalyzer)
-function getComplexityStyle(complexity) {
+// Helper functions for complexity styling
+const getComplexityStyle = (complexity) => {
   switch (complexity) {
-    case 'simple':
+    case 'low':
       return {
-        color: '#2ed573',
-        backgroundColor: '#d4edda',
         icon: '✓',
-        label: 'Simple'
+        label: 'Low',
+        color: '#059669',
+        backgroundColor: '#d1fae5'
       };
-    case 'moderate':
+    case 'medium':
       return {
-        color: '#f39c12',
-        backgroundColor: '#fff3cd',
         icon: '⚠',
-        label: 'Moderate'
+        label: 'Medium',
+        color: '#d97706',
+        backgroundColor: '#fef3c7'
       };
-    case 'complex':
+    case 'high':
       return {
-        color: '#e74c3c',
-        backgroundColor: '#f8d7da',
         icon: '⚡',
-        label: 'Complex'
+        label: 'High',
+        color: '#dc2626',
+        backgroundColor: '#fee2e2'
       };
     default:
       return {
-        color: '#6c757d',
-        backgroundColor: '#e9ecef',
         icon: '?',
-        label: 'Unknown'
+        label: 'Unknown',
+        color: '#6b7280',
+        backgroundColor: '#f3f4f6'
       };
   }
-}
+};
 
-function getTaskSummary(breakdown) {
-  const { totalTasks, complexity, isMultiStep, stepCount } = breakdown;
+const getTaskSummary = (taskBreakdown) => {
+  const { totalTasks, complexity, isMultiStep, stepCount } = taskBreakdown;
   
   if (isMultiStep) {
-    return `${totalTasks} tasks across ${stepCount} steps`;
+    return `This command will execute ${totalTasks} tasks across ${stepCount} steps.`;
+  } else {
+    return `This command will execute ${totalTasks} task${totalTasks !== 1 ? 's' : ''}.`;
   }
-  
-  if (totalTasks === 1) {
-    return '1 task';
-  }
-  
-  return `${totalTasks} tasks`;
-}
+};
 
 export default TaskBreakdown;
