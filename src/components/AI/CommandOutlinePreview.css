@@ -61,6 +61,13 @@
   overflow-wrap: break-word;
 }
 
+.task-count-indicator {
+  font-size: 12px;
+  color: var(--text-color-secondary, #666);
+  margin-top: 4px;
+  font-weight: 500;
+}
+
 /* Actions */
 .outline-actions {
   display: flex;

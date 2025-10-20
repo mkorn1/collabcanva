@@ -11,7 +11,8 @@ const CommandOutlinePreview = ({
   previewData = null,
   onApprove = null,
   onReject = null,
-  position = 'bottom-right' // 'bottom-right', 'bottom-left', 'top-right', 'top-left'
+  position = 'bottom-right', // 'bottom-right', 'bottom-left', 'top-right', 'top-left'
+  taskCount = null // Optional task count to display
 }) => {
   if (!isVisible || !previewData) {
     return null;
@@ -57,7 +58,7 @@ const CommandOutlinePreview = ({
 
   return (
     <div 
-      className={`command-outline-preview ${position}`}
+      className={`command-outline-preview ${position} visible`}
       role="dialog"
       aria-label="Command Preview"
     >
@@ -66,6 +67,11 @@ const CommandOutlinePreview = ({
         <div className="outline-text">
           {outlineText}
         </div>
+        {taskCount && (
+          <div className="task-count-indicator">
+            {taskCount} task{taskCount !== 1 ? 's' : ''}
+          </div>
+        )}
       </div>
 
       {/* Action Buttons */}

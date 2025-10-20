@@ -21,8 +21,10 @@ import { useCanvas } from './hooks/useCanvas.js'
 // Import AI Agent Panel
 import AIAgentPanel from './components/AI/AIAgentPanel'
 import CommandOutlinePreview from './components/AI/CommandOutlinePreview'
+import TaskBreakdown from './components/AI/TaskBreakdown'
 import { processCommand, testConnection, getLangSmithStatus } from './services/aiAgent'
 import { executeCommand, executeCommands } from './services/commandExecutor'
+import { analyzeTaskBreakdown, analyzeMultipleTasks } from './services/taskAnalyzer'
 
 // Main App content (shown when authenticated)
 function MainApp() {
@@ -48,6 +50,8 @@ function MainApp() {
   const [previewVisible, setPreviewVisible] = useState(false)
   const [previewData, setPreviewData] = useState(null)
   const [pendingCommand, setPendingCommand] = useState(null)
+  const [previewObjects, setPreviewObjects] = useState([]) // Visual preview objects
+  const [taskBreakdown, setTaskBreakdown] = useState(null) // Task breakdown data
 
   // Serialize canvas state for AI consumption
   const serializeCanvasState = useCallback(() => {
@@ -98,8 +102,13 @@ function MainApp() {
       
       const result = await processCommand(message, canvasState, user?.uid || 'anonymous')
       
+      console.log('🤖 AI processing result:', result);
+      
       if (result.success) {
+        console.log('✅ AI processing successful, result type:', result.type);
+        
         if (result.type === 'function_call') {
+          console.log('🎯 Function call detected, preparing preview...');
           // AI wants to execute a function - show preview first
           let functionCalls = [];
           let summary = result.message;
@@ -113,6 +122,9 @@ function MainApp() {
             functionCalls = [result.functionCall];
           }
           
+          console.log('📋 Function calls to preview:', functionCalls);
+          console.log('📝 Summary:', summary);
+          
           const aiMessage = {
             role: 'assistant',
             content: `I'll execute this command for you. ${summary}`,
@@ -121,6 +133,12 @@ function MainApp() {
           }
           setAiMessages(prev => [...prev, aiMessage])
           
+          // Generate visual preview objects
+          const visualPreviewObjects = generatePreviewObjects(functionCalls, canvasState);
+          
+          // Generate task breakdown
+          const taskAnalysis = analyzeMultipleTasks(functionCalls);
+          
           // Prepare preview data
           const preview = {
             functionCalls: functionCalls,
@@ -128,11 +146,22 @@ function MainApp() {
             affectedObjects: getAffectedObjectsPreview(functionCalls, canvasState)
           }
           
+          console.log('👁️ Preview data prepared:', preview);
+          console.log('👁️ Preview functionCalls:', functionCalls);
+          console.log('👁️ Preview summary:', summary);
+          console.log('🎨 Visual preview objects:', visualPreviewObjects);
+          console.log('📊 Task breakdown:', taskAnalysis);
+          
           // Show preview overlay
           setPreviewData(preview)
+          setPreviewObjects(visualPreviewObjects) // Set visual preview objects
+          setTaskBreakdown(taskAnalysis) // Set task breakdown data
           setPendingCommand(result.functionCall)
           setPreviewVisible(true)
+          
+          console.log('👁️ Preview should now be visible');
         } else {
+          console.log('💬 AI provided text response, not function call');
           // AI provided a text response
           const aiMessage = {
             role: 'assistant',
@@ -142,6 +171,7 @@ function MainApp() {
           setAiMessages(prev => [...prev, aiMessage])
         }
       } else {
+        console.log('❌ AI processing failed:', result.message);
         // Error response
         const errorMessage = {
           role: 'system',
@@ -222,9 +252,104 @@ function MainApp() {
     return affectedObjects;
   }
 
+  // Generate visual preview objects for the canvas
+  const generatePreviewObjects = (functionCalls, canvasState) => {
+    const calls = Array.isArray(functionCalls) ? functionCalls : [functionCalls];
+    const previewObjects = [];
+    
+    calls.forEach(functionCall => {
+      const { name, arguments: args } = functionCall;
+      
+      switch (name) {
+        case 'create_shape':
+          // Create preview object with dashed border
+          const previewId = 'preview-' + Date.now() + '-' + Math.random();
+          previewObjects.push({
+            id: previewId,
+            type: args.type,
+            fill: args.fill,
+            width: args.width,
+            height: args.height,
+            x: args.x,
+            y: args.y,
+            stroke: '#0066ff',
+            strokeWidth: 2,
+            dash: [5, 5], // Dashed border for preview
+            opacity: 0.8,
+            isPreview: true,
+            previewType: 'create'
+          });
+          break;
+        
+        case 'modify_shape':
+          // Find the object being modified and create a preview with changes
+          const targetObject = canvasState.objects.find(obj => obj.id === args.id);
+          if (targetObject) {
+            previewObjects.push({
+              ...targetObject,
+              id: 'preview-modify-' + targetObject.id,
+              ...args.updates, // Apply the updates
+              stroke: '#ff6b35',
+              strokeWidth: 2,
+              dash: [5, 5], // Dashed border for preview
+              opacity: 0.8,
+              isPreview: true,
+              previewType: 'modify',
+              originalId: targetObject.id
+            });
+          }
+          break;
+        
+        case 'delete_shape':
+          // Find the object being deleted and show it with reduced opacity
+          const deleteObject = canvasState.objects.find(obj => obj.id === args.id);
+          if (deleteObject) {
+            previewObjects.push({
+              ...deleteObject,
+              id: 'preview-delete-' + deleteObject.id,
+              stroke: '#ff4757',
+              strokeWidth: 3,
+              opacity: 0.3, // Reduced opacity for delete preview
+              isPreview: true,
+              previewType: 'delete',
+              originalId: deleteObject.id
+            });
+          }
+          break;
+        
+        case 'arrange_shapes':
+          // For arrange commands, show the new positions with dashed borders
+          const arrangeObjects = canvasState.objects.filter(obj => args.ids.includes(obj.id));
+          // This is more complex - we'd need to calculate new positions
+          // For now, just mark them as being arranged
+          arrangeObjects.forEach(obj => {
+            previewObjects.push({
+              ...obj,
+              id: 'preview-arrange-' + obj.id,
+              stroke: '#9b59b6',
+              strokeWidth: 2,
+              dash: [5, 5],
+              opacity: 0.8,
+              isPreview: true,
+              previewType: 'arrange',
+              originalId: obj.id
+            });
+          });
+          break;
+        
+        default:
+          break;
+      }
+    });
+    
+    return previewObjects;
+  }
+
   // Handle preview approval
   const handlePreviewApprove = async (previewData) => {
     if (!pendingCommand) return;
+    
+    console.log('✅ Preview approved, executing command:', pendingCommand);
     
     try {
       // Use real canvas context
@@ -236,16 +361,22 @@ function MainApp() {
         getSelectedObjects: getSelectedObjects || (() => [])
       };
       
+      console.log('🎯 Canvas context for execution:', canvasContextForExecution);
+      
       let result;
       
       // Handle multi-step commands differently
       if (pendingCommand.name === 'multi_step_command') {
         const steps = pendingCommand.arguments.steps || [];
+        console.log('🔄 Executing multi-step command with steps:', steps);
         result = await executeCommands(steps, canvasContextForExecution, user);
       } else {
         // Single command
+        console.log('🎯 Executing single command:', pendingCommand);
         result = await executeCommand(pendingCommand, canvasContextForExecution, user);
       }
+      
+      console.log('📊 Command execution result:', result);
       
       if (result.success) {
         const successMessage = {
@@ -303,6 +434,8 @@ function MainApp() {
       // Close preview
       setPreviewVisible(false);
       setPreviewData(null);
+      setPreviewObjects([]); // Clear visual preview objects
+      setTaskBreakdown(null); // Clear task breakdown
       setPendingCommand(null);
     }
   }
@@ -319,6 +452,8 @@ function MainApp() {
     // Close preview
     setPreviewVisible(false);
     setPreviewData(null);
+    setPreviewObjects([]); // Clear visual preview objects
+    setTaskBreakdown(null); // Clear task breakdown
     setPendingCommand(null);
   }
 
@@ -386,7 +521,7 @@ function MainApp() {
 
       {/* Canvas takes up the full viewport minus the header */}
       <div className="canvas-container">
-        <Canvas canvasContext={canvasContext} />
+        <Canvas canvasContext={canvasContext} previewObjects={previewObjects} />
       </div>
 
       {/* AI Agent Panel */}
@@ -400,6 +535,13 @@ function MainApp() {
         isServiceAvailable={!!import.meta.env.VITE_OPENAI_API_KEY}
       />
 
+      {/* Task Breakdown */}
+      <TaskBreakdown
+        isVisible={previewVisible}
+        taskBreakdown={taskBreakdown}
+        position="top-right"
+      />
+
       {/* Command Outline Preview */}
       <CommandOutlinePreview
         isVisible={previewVisible}
@@ -407,6 +549,7 @@ function MainApp() {
         onApprove={handlePreviewApprove}
         onReject={handlePreviewReject}
         position="bottom-right"
+        taskCount={taskBreakdown?.totalTasks}
       />
     </div>
   )

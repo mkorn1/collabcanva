@@ -69,7 +69,7 @@ const PerformanceStats = () => {
   );
 };
 
-const Canvas = ({ canvasContext = null }) => {
+const Canvas = ({ canvasContext = null, previewObjects = [] }) => {
   // Get current authenticated user FIRST
   const { user } = useAuth();
 
@@ -562,6 +562,61 @@ const Canvas = ({ canvasContext = null }) => {
                   selectedObjects={selectedObjects}
                   onMultiMove={handleMultiObjectMove}
                   onMultiTransform={handleMultiObjectTransform}
+                />
+              );
+            }
+            return null;
+          })}
+          
+          {/* Render preview objects */}
+          {previewObjects.map((previewObj) => {
+            if (previewObj.type === 'rectangle') {
+              return (
+                <Rect
+                  key={previewObj.id}
+                  x={previewObj.x}
+                  y={previewObj.y}
+                  width={previewObj.width}
+                  height={previewObj.height}
+                  fill={previewObj.fill}
+                  stroke={previewObj.stroke}
+                  strokeWidth={previewObj.strokeWidth}
+                  opacity={previewObj.opacity}
+                  dash={previewObj.dash}
+                  rotation={previewObj.rotation || 0}
+                />
+              );
+            } else if (previewObj.type === 'circle') {
+              return (
+                <KonvaCircle
+                  key={previewObj.id}
+                  x={previewObj.x}
+                  y={previewObj.y}
+                  radius={previewObj.width / 2} // Convert diameter to radius
+                  fill={previewObj.fill}
+                  stroke={previewObj.stroke}
+                  strokeWidth={previewObj.strokeWidth}
+                  opacity={previewObj.opacity}
+                  dash={previewObj.dash}
+                  rotation={previewObj.rotation || 0}
+                />
+              );
+            } else if (previewObj.type === 'text') {
+              return (
+                <KonvaText
+                  key={previewObj.id}
+                  x={previewObj.x}
+                  y={previewObj.y}
+                  text={previewObj.text || previewObj.text_content || 'New Text'}
+                  fontSize={previewObj.fontSize || 16}
+                  fontFamily={previewObj.fontFamily || 'Arial'}
+                  fill={previewObj.fill}
+                  stroke={previewObj.stroke}
+                  strokeWidth={previewObj.strokeWidth}
+                  opacity={previewObj.opacity}
+                  dash={previewObj.dash}
+                  rotation={previewObj.rotation || 0}
+                  width={previewObj.width}
                 />
               );
             }

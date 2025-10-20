@@ -104,37 +104,56 @@ function getSmartColor(objects, userIntent) {
  * @returns {Object} - Smart size object
  */
 function getSmartSize(objects, shapeType, userIntent) {
+  console.log('🔍 getSmartSize called:', { objects: objects.length, shapeType, userIntent });
+  
   // If user specified size, use it
   if (userIntent.size) {
     const preset = SIZE_PRESETS[userIntent.size];
     if (preset && preset[shapeType]) {
+      console.log('📏 Using user-specified size preset:', preset[shapeType]);
       return preset[shapeType];
     }
   }
   
   // Analyze existing sizes on canvas
   const sizeAnalysis = analyzeCanvasSizes(objects);
+  console.log('📊 Size analysis:', sizeAnalysis);
   
   // If canvas is empty, use medium size
   if (objects.length === 0) {
-    return SIZE_PRESETS.medium[shapeType];
+    const defaultSize = SIZE_PRESETS.medium[shapeType];
+    console.log('📏 Using default medium size for empty canvas:', defaultSize);
+    return defaultSize;
   }
   
   // If canvas has mostly small objects, create a medium-sized one
   if (sizeAnalysis.smallRatio > 0.6) {
-    return SIZE_PRESETS.medium[shapeType];
+    const mediumSize = SIZE_PRESETS.medium[shapeType];
+    console.log('📏 Using medium size for small-heavy canvas:', mediumSize);
+    return mediumSize;
   }
   
   // If canvas has mostly large objects, create a medium-sized one
   if (sizeAnalysis.largeRatio > 0.6) {
-    return SIZE_PRESETS.medium[shapeType];
+    const mediumSize = SIZE_PRESETS.medium[shapeType];
+    console.log('📏 Using medium size for large-heavy canvas:', mediumSize);
+    return mediumSize;
   }
   
   // If canvas has mixed sizes, use the average size
-  return {
+  const averageSize = {
     width: Math.max(50, Math.min(300, sizeAnalysis.averageWidth)),
     height: Math.max(30, Math.min(200, sizeAnalysis.averageHeight))
   };
+  
+  // Safety check: if we still get NaN values, fall back to medium preset
+  if (isNaN(averageSize.width) || isNaN(averageSize.height)) {
+    console.log('📏 Average size resulted in NaN, falling back to medium preset');
+    return SIZE_PRESETS.medium[shapeType];
+  }
+  
+  console.log('📏 Using average size for mixed canvas:', averageSize);
+  return averageSize;
 }
 
 /**
@@ -146,30 +165,51 @@ function getSmartSize(objects, shapeType, userIntent) {
  * @returns {Object} - Smart position object
  */
 function getSmartPosition(objects, dimensions, shapeType, userIntent) {
+  console.log('📍 getSmartPosition called:', { objects: objects.length, dimensions, shapeType, userIntent });
+  
   // If user specified position, use it
   if (userIntent.position) {
-    return resolvePositionHint(userIntent.position, dimensions);
+    const resolvedPosition = resolvePositionHint(userIntent.position, dimensions);
+    console.log('📍 Using user-specified position:', resolvedPosition);
+    return resolvedPosition;
   }
   
   // If canvas is empty, place in center
   if (objects.length === 0) {
-    return {
+    const centerPosition = {
       x: dimensions.width / 2 - 50, // Offset for shape size
       y: dimensions.height / 2 - 30
     };
+    console.log('📍 Using center position for empty canvas:', centerPosition);
+    return centerPosition;
   }
   
   // Get smart size for the shape type
   const smartSize = getSmartSize(objects, shapeType, userIntent);
+  console.log('📍 Smart size for position calculation:', smartSize);
+  
+  // Safety check: if smart size has NaN values, use default size
+  if (isNaN(smartSize.width) || isNaN(smartSize.height)) {
+    console.log('📍 Smart size has NaN values, using default size for position calculation');
+    const defaultSize = SIZE_PRESETS.medium[shapeType];
+    const fallbackPosition = {
+      x: dimensions.width / 2 - defaultSize.width / 2,
+      y: dimensions.height / 2 - defaultSize.height / 2
+    };
+    console.log('📍 Using fallback position:', fallbackPosition);
+    return fallbackPosition;
+  }
   
   // Find empty space on canvas
   const emptySpace = findEmptySpace(objects, dimensions, smartSize);
   if (emptySpace) {
+    console.log('📍 Found empty space:', emptySpace);
     return emptySpace;
   }
   
   // If no empty space, place near existing objects
   const nearbyPosition = findNearbyPosition(objects, dimensions, smartSize);
+  console.log('📍 Using nearby position:', nearbyPosition);
   return nearbyPosition;
 }
 
@@ -234,24 +274,45 @@ function analyzeCanvasSizes(objects) {
     return { averageWidth: 100, averageHeight: 60, smallRatio: 0, largeRatio: 0 };
   }
   
-  const sizes = objects.map(obj => ({ width: obj.width, height: obj.height }));
+  // Filter out objects with invalid dimensions
+  const validObjects = objects.filter(obj => 
+    typeof obj.width === 'number' && 
+    typeof obj.height === 'number' && 
+    !isNaN(obj.width) && 
+    !isNaN(obj.height) && 
+    obj.width > 0 && 
+    obj.height > 0
+  );
+  
+  console.log('📊 Valid objects for size analysis:', validObjects.length, 'out of', objects.length);
+  
+  // If no valid objects, return defaults
+  if (validObjects.length === 0) {
+    console.log('📊 No valid objects found, using defaults');
+    return { averageWidth: 100, averageHeight: 60, smallRatio: 0, largeRatio: 0 };
+  }
+  
+  const sizes = validObjects.map(obj => ({ width: obj.width, height: obj.height }));
   const totalWidth = sizes.reduce((sum, size) => sum + size.width, 0);
   const totalHeight = sizes.reduce((sum, size) => sum + size.height, 0);
   
-  const averageWidth = totalWidth / objects.length;
-  const averageHeight = totalHeight / objects.length;
+  const averageWidth = totalWidth / validObjects.length;
+  const averageHeight = totalHeight / validObjects.length;
   
-  const smallObjects = objects.filter(obj => 
+  const smallObjects = validObjects.filter(obj => 
     obj.width < 60 && obj.height < 40);
-  const largeObjects = objects.filter(obj => 
+  const largeObjects = validObjects.filter(obj => 
     obj.width > 150 && obj.height > 100);
   
-  return {
+  const result = {
     averageWidth,
     averageHeight,
-    smallRatio: smallObjects.length / objects.length,
-    largeRatio: largeObjects.length / objects.length
+    smallRatio: smallObjects.length / validObjects.length,
+    largeRatio: largeObjects.length / validObjects.length
   };
+  
+  console.log('📊 Size analysis result:', result);
+  return result;
 }
 
 /**

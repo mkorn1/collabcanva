@@ -82,6 +82,12 @@ You have access to intelligent defaults for colors, sizes, positions, and spacin
 - Ask clarifying questions when commands are ambiguous
 - Use specific, descriptive language for object identification
 
+## Multiple Shape Creation
+- When user requests MULTIPLE shapes (numbers, grids, arrays), use multi_step_command
+- Examples: "3 circles", "grid of 3x3", "5 rectangles", "create 4 text boxes"
+- Each shape gets its own create_shape step with calculated positions
+- For grids: calculate positions systematically (row by row, left to right)
+
 ## Key Conversions
 - Circles: radius → diameter (radius * 2)
 - Colors: Accept names (red, blue) and hex codes (#FF0000)
@@ -90,10 +96,16 @@ You have access to intelligent defaults for colors, sizes, positions, and spacin
 
 ## Command Examples
 
-### Creation
+### Single Shape Creation
 - "create a red circle" → create_shape("circle", 400, 300, 80, 80, "#e74c3c")
 - "add blue rectangle at center" → create_shape("rectangle", 960, 540, 100, 60, "#3498db")
 - "make text box below title" → create_shape("text", x, y, 200, 40, "#2c3e50", "New Text", null, null, null, "below", "title")
+
+### Multiple Shape Creation (Use multi_step_command)
+- "create 3 circles" → multi_step_command with 3 create_shape steps
+- "make a grid of 3x3 squares" → multi_step_command with 9 create_shape steps
+- "create 5 rectangles in a row" → multi_step_command with 5 create_shape steps
+- "add 4 text boxes" → multi_step_command with 4 create_shape steps
 
 ### Manipulation
 - "move red circle to 500, 400" → modify_shape("circle_id", {x: 500, y: 400})
@@ -828,28 +840,28 @@ function applySmartDefaultsToCreateShape(args, userIntent, smartDefaults, canvas
   }
   
   // Apply size defaults
-  if (!enhanced.width && userIntent.size) {
+  if (enhanced.width === undefined && userIntent.size) {
     enhanced.width = smartDefaults.size.width;
-  } else if (!enhanced.width) {
+  } else if (enhanced.width === undefined) {
     enhanced.width = smartDefaults.size.width;
   }
   
-  if (!enhanced.height && userIntent.size) {
+  if (enhanced.height === undefined && userIntent.size) {
     enhanced.height = smartDefaults.size.height;
-  } else if (!enhanced.height) {
+  } else if (enhanced.height === undefined) {
     enhanced.height = smartDefaults.size.height;
   }
   
   // Apply position defaults
-  if (!enhanced.x && userIntent.position) {
+  if (enhanced.x === undefined && userIntent.position) {
     enhanced.x = smartDefaults.position.x;
-  } else if (!enhanced.x) {
+  } else if (enhanced.x === undefined) {
     enhanced.x = smartDefaults.position.x;
   }
   
-  if (!enhanced.y && userIntent.position) {
+  if (enhanced.y === undefined && userIntent.position) {
     enhanced.y = smartDefaults.position.y;
-  } else if (!enhanced.y) {
+  } else if (enhanced.y === undefined) {
     enhanced.y = smartDefaults.position.y;
   }
   
@@ -1140,6 +1152,15 @@ export async function processCommand(command, canvasState = {}, userId = 'defaul
               }
             ];
 
+    // Log the input data being sent to OpenAI
+    console.log('📤 Sending to OpenAI:', {
+      command: command,
+      canvasState: canvasState,
+      userIntent: userIntent,
+      smartDefaults: smartDefaults,
+      messages: messages
+    });
+
     // Call OpenAI API
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
@@ -1149,7 +1170,7 @@ export async function processCommand(command, canvasState = {}, userId = 'defaul
       functions: [
         {
           name: 'multi_step_command',
-          description: 'Execute multiple canvas operations in sequence. Use this for complex operations like creating login forms, card layouts, or dashboards that require multiple shapes.',
+          description: 'Execute multiple canvas operations in sequence. Use this when the user wants to create MULTIPLE shapes (e.g., "create 3 circles", "make a grid of 3x3 squares", "create 5 rectangles"). Each shape should be a separate create_shape step.',
           parameters: {
             type: 'object',
             properties: {
@@ -1487,6 +1508,15 @@ export async function processCommand(command, canvasState = {}, userId = 'defaul
     const endTime = Date.now();
     const responseTime = endTime - startTime;
 
+    // Log the complete OpenAI API response
+    console.log('🤖 OpenAI API Response:', {
+      model: response.model,
+      usage: response.usage,
+      responseTime: responseTime,
+      choice: response.choices[0],
+      message: response.choices[0].message
+    });
+
     // Process the response
     const choice = response.choices[0];
     const message = choice.message;
@@ -1499,11 +1529,17 @@ export async function processCommand(command, canvasState = {}, userId = 'defaul
         arguments: JSON.parse(message.function_call.arguments)
       };
       
+      console.log('🔧 Raw Function Call from AI:', functionCall);
+      
       // Apply smart defaults to function call arguments
       const enhancedFunctionCall = applySmartDefaultsToFunctionCall(functionCall, userIntent, smartDefaults, canvasState);
       
+      console.log('✨ Enhanced Function Call (after smart defaults):', enhancedFunctionCall);
+      
       // Resolve object references (convert descriptions to IDs)
       const resolvedFunctionCall = resolveObjectReferences(enhancedFunctionCall, canvasState);
+      
+      console.log('🎯 Final Resolved Function Call:', resolvedFunctionCall);
       
       // Check for ambiguities before execution
       const ambiguityAnalysis = detectObjectAmbiguity(resolvedFunctionCall, canvasState);

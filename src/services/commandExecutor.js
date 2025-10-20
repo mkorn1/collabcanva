@@ -370,11 +370,15 @@ async function executeMultiStepCommand(args, canvasContext, user) {
  * @returns {Promise<Object>} - Execution result
  */
 async function executeCreateShape(args, canvasContext, user) {
+  console.log('🎨 executeCreateShape called with args:', args);
+  console.log('🎨 canvasContext:', canvasContext);
+  
   const { addObject } = canvasContext;
   
   // Validate required arguments
-  if (!args.type || !args.x !== undefined || !args.y !== undefined || 
-      !args.width !== undefined || !args.height !== undefined || !args.fill) {
+  if (!args.type || args.x === undefined || args.y === undefined || 
+      args.width === undefined || args.height === undefined || !args.fill) {
+    console.log('❌ Validation failed - missing required arguments');
     return {
       success: false,
       message: 'Missing required arguments: type, x, y, width, height, fill',
@@ -382,14 +386,19 @@ async function executeCreateShape(args, canvasContext, user) {
     };
   }
   
+  console.log('✅ Validation passed');
+  
   // Validate object type
   if (!['rectangle', 'circle', 'text'].includes(args.type)) {
+    console.log('❌ Invalid object type:', args.type);
     return {
       success: false,
       message: `Invalid object type: ${args.type}. Must be rectangle, circle, or text`,
       type: 'error'
     };
   }
+  
+  console.log('✅ Object type validation passed');
   
   // Create object with validation
   const newObject = {
@@ -405,6 +414,8 @@ async function executeCreateShape(args, canvasContext, user) {
     rotation: args.rotation || 0
   };
   
+  console.log('🎨 Created new object:', newObject);
+  
   // Add type-specific properties
   if (args.type === 'text') {
     newObject.text = args.text_content || 'New Text';
@@ -418,16 +429,22 @@ async function executeCreateShape(args, canvasContext, user) {
   }
   
   try {
+    console.log('🎨 Calling addObject with:', newObject);
     const objectId = await addObject(newObject);
+    console.log('🎨 addObject returned ID:', objectId);
     
-    return {
+    const result = {
       success: true,
       message: `Created ${args.type} at (${newObject.x}, ${newObject.y})`,
       type: 'success',
       objectId: objectId,
       object: newObject
     };
+    
+    console.log('🎨 executeCreateShape success result:', result);
+    return result;
   } catch (error) {
+    console.log('❌ executeCreateShape error:', error);
     return {
       success: false,
       message: `Failed to create ${args.type}: ${error.message}`,
@@ -598,10 +615,14 @@ async function executeDeleteShape(args, canvasContext, user) {
  * @returns {Promise<Object>} - Execution result
  */
 async function executeArrangeShapes(args, canvasContext, user) {
+  console.log('🔄 executeArrangeShapes called with args:', args);
+  console.log('🔄 canvasContext:', canvasContext);
+  
   const { updateObject, objects } = canvasContext;
   
   // Validate required arguments
   if (!args.ids || !Array.isArray(args.ids) || args.ids.length === 0) {
+    console.log('❌ Missing or invalid ids array');
     return {
       success: false,
       message: 'Missing or invalid ids array',
@@ -610,6 +631,7 @@ async function executeArrangeShapes(args, canvasContext, user) {
   }
   
   if (!args.layout || !['row', 'column', 'grid', 'distribute_h', 'distribute_v', 'circle', 'spiral', 'flow', 'hexagon', 'diamond', 'wave', 'zigzag', 'radial', 'fibonacci'].includes(args.layout)) {
+    console.log('❌ Invalid layout:', args.layout);
     return {
       success: false,
       message: `Invalid layout: ${args.layout}. Must be one of: row, column, grid, distribute_h, distribute_v, circle, spiral, flow, hexagon, diamond, wave, zigzag, radial, fibonacci`,
@@ -619,8 +641,10 @@ async function executeArrangeShapes(args, canvasContext, user) {
   
   // Find all objects to arrange
   const objectsToArrange = args.ids.map(id => objects.find(obj => obj.id === id)).filter(Boolean);
+  console.log('🔄 Objects to arrange:', objectsToArrange);
   
   if (objectsToArrange.length === 0) {
+    console.log('❌ No valid objects found to arrange');
     return {
       success: false,
       message: 'No valid objects found to arrange',
@@ -629,6 +653,7 @@ async function executeArrangeShapes(args, canvasContext, user) {
   }
   
   if (objectsToArrange.length !== args.ids.length) {
+    console.log('❌ Only found', objectsToArrange.length, 'of', args.ids.length, 'objects');
     return {
       success: false,
       message: `Only found ${objectsToArrange.length} of ${args.ids.length} objects`,
@@ -638,7 +663,9 @@ async function executeArrangeShapes(args, canvasContext, user) {
   
   try {
     // Calculate new positions based on layout
+    console.log('🔄 Calculating layout positions for layout:', args.layout);
     const newPositions = calculateLayoutPositions(objectsToArrange, args.layout, args.options || {});
+    console.log('🔄 New positions calculated:', newPositions);
     
     // Update all objects with individual error handling
     const updateResults = [];
@@ -649,8 +676,19 @@ async function executeArrangeShapes(args, canvasContext, user) {
       const obj = objectsToArrange[i];
       const newPos = newPositions[i];
       
+      console.log(`🔄 Updating object ${i}:`, {
+        id: obj.id,
+        type: obj.type,
+        originalPosition: { x: obj.x, y: obj.y },
+        newPosition: newPos,
+        originalSize: { width: obj.width, height: obj.height }
+      });
+      
       try {
-        await updateObject(obj.id, { x: newPos.x, y: newPos.y });
+        const updateData = { x: newPos.x, y: newPos.y };
+        console.log('🔄 Calling updateObject with:', updateData);
+        await updateObject(obj.id, updateData);
+        
         successfulUpdates.push({
           objectId: obj.id,
           objectType: obj.type,
@@ -661,7 +699,10 @@ async function executeArrangeShapes(args, canvasContext, user) {
           objectId: obj.id,
           message: `Updated ${obj.type} position to (${newPos.x}, ${newPos.y})`
         });
+        
+        console.log('✅ Successfully updated object:', obj.id);
       } catch (error) {
+        console.log('❌ Failed to update object:', obj.id, error);
         failedUpdates.push({
           objectId: obj.id,
           objectType: obj.type,
