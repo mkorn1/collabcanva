@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { Stage, Layer, Rect, Circle as KonvaCircle } from 'react-konva';
+import { Stage, Layer, Rect, Circle as KonvaCircle, Text as KonvaText } from 'react-konva';
 import { 
   CANVAS_WIDTH, 
   CANVAS_HEIGHT

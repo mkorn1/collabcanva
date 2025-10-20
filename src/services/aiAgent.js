@@ -72,6 +72,7 @@ When users refer to shapes without IDs, use these strategies:
 - **By Position**: "top shape" → Lowest y coordinate, "leftmost" → Lowest x coordinate
 - **By Selection**: "this shape" → Use selected objects
 - **By Content**: "title" → Text containing "title"
+- **Default**: When no objects specified, use currently selected objects
 
 ## Smart Defaults
 You have access to intelligent defaults for colors, sizes, positions, and spacing. Use these when users don't specify exact parameters.
@@ -113,8 +114,10 @@ You have access to intelligent defaults for colors, sizes, positions, and spacin
 - "change circle to green" → modify_shape("circle_id", {fill: "#2ecc71"})
 
 ### Layout
-- "arrange shapes in row" → arrange_shapes(["id1", "id2"], "row")
-- "distribute evenly" → arrange_shapes(["id1", "id2"], "distribute_h")
+- "arrange in row" → arrange_shapes(["selected_id1", "selected_id2"], "row") // Uses selected objects when none specified
+- "arrange shapes in row" → arrange_shapes(["id1", "id2"], "row") // Uses current positions as starting point
+- "distribute evenly horizontally" → arrange_shapes(["selected_id1", "selected_id2"], "distribute_h", {distributionType: "space-between"}) // Uses selected objects
+- "distribute evenly vertically" → arrange_shapes(["selected_id1", "selected_id2"], "distribute_v", {distributionType: "space-between"}) // Uses selected objects
 - "create login form" → create_layout_template("login_form", x, y, "medium", "modern")
 
 ### Error Handling
@@ -239,6 +242,14 @@ function resolveObjectReferences(functionCall, canvasState) {
           }
         }
         resolvedArgs.ids = resolvedIds;
+      } else if (!args.ids || args.ids.length === 0) {
+        // No objects specified - use selected objects as default
+        if (canvasState.selectedObjects && canvasState.selectedObjects.length > 0) {
+          resolvedArgs.ids = canvasState.selectedObjects.map(obj => obj.id);
+          console.log(`🎯 Using selected objects as default: ${resolvedArgs.ids.join(', ')}`);
+        } else {
+          console.warn(`⚠️ No objects specified and no objects selected`);
+        }
       }
       break;
       
@@ -1040,7 +1051,7 @@ function calculateCanvasBounds(objects) {
 }
 
 /**
- * Rate limiting: 4 commands per minute per user
+ * Rate limiting: 10 commands per minute per user
  * @param {string} userId - User identifier
  * @returns {boolean} - Whether request is allowed
  */
@@ -1051,7 +1062,7 @@ function checkRateLimit(userId) {
   // Remove requests older than 1 minute
   const recentRequests = userRequests.filter(timestamp => now - timestamp < 60000);
   
-  if (recentRequests.length >= 4) {
+  if (recentRequests.length >= 10) {
     return false; // Rate limit exceeded
   }
   
@@ -1399,9 +1410,9 @@ export async function processCommand(command, canvasState = {}, userId = 'defaul
               ids: {
                 type: 'array',
                 items: { type: 'string' },
-                minItems: 2,
+                minItems: 1,
                 maxItems: 20,
-                description: 'Array of shape IDs to arrange. Must contain at least 2 shapes and at most 20 shapes. All IDs must exist on the canvas'
+                description: 'Array of shape IDs to arrange. If not provided, uses currently selected objects. Must contain at least 1 shape and at most 20 shapes. All IDs must exist on the canvas'
               },
               layout: {
                 type: 'string',
@@ -1428,18 +1439,18 @@ export async function processCommand(command, canvasState = {}, userId = 'defaul
                     type: 'number',
                     minimum: 0,
                     maximum: 2000,
-                    description: 'Starting X position for the arrangement. Default: calculated from existing shapes'
+                    description: 'Starting X position for the arrangement. Default: current position of single object or average X of multiple objects'
                   },
                   startY: { 
                     type: 'number',
                     minimum: 0,
                     maximum: 1500,
-                    description: 'Starting Y position for the arrangement. Default: calculated from existing shapes'
+                    description: 'Starting Y position for the arrangement. Default: current position of single object or average Y of multiple objects'
                   }
                 }
               }
             },
-            required: ['ids', 'layout']
+            required: ['layout']
           }
         },
         {
@@ -1698,7 +1709,7 @@ export function getRateLimitStatus(userId) {
   
   return {
     requestsUsed: recentRequests.length,
-    requestsRemaining: Math.max(0, 4 - recentRequests.length),
+    requestsRemaining: Math.max(0, 10 - recentRequests.length),
     resetTime: recentRequests.length > 0 ? Math.ceil((recentRequests[0] + 60000 - now) / 1000) : 0
   };
 }

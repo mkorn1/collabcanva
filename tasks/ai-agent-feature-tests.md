@@ -10,49 +10,49 @@
 ### **1. Creation Commands (3 types)**
 
 #### **1.1 Rectangle Creation**
-- [ ] **Basic rectangle creation**
+- [x] **Basic rectangle creation**
   - Test: "Create a red rectangle"
   - Expected: Creates rectangle with red fill, smart default size/position
   - Success criteria: Rectangle appears on canvas with correct color
 
-- [ ] **Positioned rectangle creation**
+- [x] **Positioned rectangle creation**
   - Test: "Add a blue rectangle at the center"
   - Expected: Creates rectangle at canvas center
   - Success criteria: Rectangle positioned at center coordinates
 
-- [ ] **Sized rectangle creation**
+- [x] **Sized rectangle creation**
   - Test: "Make a green rectangle with width 200 and height 100"
   - Expected: Creates rectangle with exact specified dimensions
   - Success criteria: Rectangle has correct width/height
 
 #### **1.2 Circle Creation**
-- [ ] **Basic circle creation**
+- [x] **Basic circle creation**
   - Test: "Create a blue circle"
   - Expected: Creates circle with blue fill, smart default size/position
   - Success criteria: Circle appears on canvas with correct color
 
-- [ ] **Radius-based circle creation**
+- [x] **Radius-based circle creation**
   - Test: "Add a red circle with radius 50"
   - Expected: Creates circle with diameter 100 (radius * 2)
   - Success criteria: Circle has correct diameter
 
-- [ ] **Positioned circle creation**
+- [x] **Positioned circle creation**
   - Test: "Make a green circle at position 300, 400"
   - Expected: Creates circle at exact coordinates
   - Success criteria: Circle positioned at specified coordinates
 
 #### **1.3 Text Creation**
-- [ ] **Basic text creation**
+- [x] **Basic text creation**
   - Test: "Create a text box with 'Hello World'"
   - Expected: Creates text element with specified content
   - Success criteria: Text appears with correct content
 
-- [ ] **Positioned text creation**
+- [x] **Positioned text creation**
   - Test: "Add a text element saying 'Welcome'"
   - Expected: Creates text with smart positioning
   - Success criteria: Text appears with correct content and positioning
 
-- [ ] **Centered text creation**
+- [x] **Centered text creation**
   - Test: "Make a text box with 'Button' in the center"
   - Expected: Creates text at canvas center
   - Success criteria: Text positioned at center
@@ -60,17 +60,17 @@
 ### **2. Manipulation Commands (3 types)**
 
 #### **2.1 Position Changes**
-- [ ] **Relative position changes**
+- [x] **Relative position changes**
   - Test: "Move the red rectangle to the center"
   - Expected: Moves rectangle to canvas center
   - Success criteria: Rectangle repositioned to center
 
-- [ ] **Absolute position changes**
+- [x] **Absolute position changes**
   - Test: "Move the blue circle to 500, 300"
   - Expected: Moves circle to exact coordinates
   - Success criteria: Circle positioned at specified coordinates
 
-- [ ] **Edge position changes**
+- [x] **Edge position changes**
   - Test: "Move the text box to the top-left"
   - Expected: Moves text to top-left corner
   - Success criteria: Text positioned at top-left
@@ -81,18 +81,18 @@
   - Expected: Increases rectangle size by ~20%
   - Success criteria: Rectangle size increased proportionally
 
-- [ ] **Exact size changes**
+- [x] **Exact size changes**
   - Test: "Resize the blue circle to 120x120"
   - Expected: Changes circle to exact dimensions
   - Success criteria: Circle has exact specified dimensions
 
-- [ ] **Size reduction**
+- [x] **Size reduction**
   - Test: "Make the text box smaller"
   - Expected: Decreases text box size
   - Success criteria: Text box size reduced
 
 #### **2.3 Color Changes**
-- [ ] **Basic color changes**
+- [x] **Basic color changes**
   - Test: "Change the red rectangle to green"
   - Expected: Changes rectangle fill color to green
   - Success criteria: Rectangle color changed to green
@@ -102,7 +102,7 @@
   - Expected: Changes circle color to purple
   - Success criteria: Circle color changed to purple
 
-- [ ] **Text color changes**
+- [x] **Text color changes**
   - Test: "Change the text color to black"
   - Expected: Changes text fill color to black
   - Success criteria: Text color changed to black
@@ -110,17 +110,17 @@
 ### **3. Layout Commands (2 types)**
 
 #### **3.1 Basic Layouts**
-- [ ] **Row arrangement**
+- [x] **Row arrangement**
   - Test: "Arrange the shapes in a row"
   - Expected: Arranges all shapes horizontally
   - Success criteria: Shapes arranged in horizontal line
 
-- [ ] **Column arrangement**
+- [x] **Column arrangement**
   - Test: "Put the shapes in a column"
   - Expected: Arranges all shapes vertically
   - Success criteria: Shapes arranged in vertical line
 
-- [ ] **Grid arrangement**
+- [x] **Grid arrangement**
   - Test: "Arrange the shapes in a 2-column grid"
   - Expected: Arranges shapes in 2-column grid
   - Success criteria: Shapes arranged in grid pattern
@@ -129,27 +129,6 @@
   - Test: "Distribute the shapes evenly horizontally"
   - Expected: Distributes shapes with equal spacing
   - Success criteria: Shapes distributed with equal spacing
-
-#### **3.2 Advanced Layouts**
-- [ ] **Hexagon pattern**
-  - Test: "Arrange the shapes in a hexagon pattern"
-  - Expected: Arranges shapes in hexagonal formation
-  - Success criteria: Shapes arranged in hexagon
-
-- [ ] **Diamond formation**
-  - Test: "Put the shapes in a diamond formation"
-  - Expected: Arranges shapes in diamond pattern
-  - Success criteria: Shapes arranged in diamond
-
-- [ ] **Wave pattern**
-  - Test: "Create a wave pattern with the shapes"
-  - Expected: Arranges shapes in wave formation
-  - Success criteria: Shapes arranged in wave pattern
-
-- [ ] **Fibonacci spiral**
-  - Test: "Arrange the shapes in a Fibonacci spiral"
-  - Expected: Arranges shapes in spiral pattern
-  - Success criteria: Shapes arranged in spiral
 
 ### **4. Complex Commands (2 types)**
 

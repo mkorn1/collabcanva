@@ -618,10 +618,27 @@ async function executeArrangeShapes(args, canvasContext, user) {
   console.log('🔄 executeArrangeShapes called with args:', args);
   console.log('🔄 canvasContext:', canvasContext);
   
-  const { updateObject, objects } = canvasContext;
+  const { updateObject, objects, getSelectedObjects } = canvasContext;
+  
+  // If no IDs provided, use selected objects
+  let objectIds = args.ids;
+  if (!objectIds || objectIds.length === 0) {
+    const selectedObjects = getSelectedObjects();
+    if (selectedObjects && selectedObjects.length > 0) {
+      objectIds = selectedObjects.map(obj => obj.id);
+      console.log('🎯 Using selected objects as default:', objectIds);
+    } else {
+      console.log('❌ No IDs provided and no objects selected');
+      return {
+        success: false,
+        message: 'No objects specified and no objects selected. Please select objects first or specify which objects to arrange.',
+        type: 'error'
+      };
+    }
+  }
   
   // Validate required arguments
-  if (!args.ids || !Array.isArray(args.ids) || args.ids.length === 0) {
+  if (!objectIds || !Array.isArray(objectIds) || objectIds.length === 0) {
     console.log('❌ Missing or invalid ids array');
     return {
       success: false,
@@ -640,7 +657,7 @@ async function executeArrangeShapes(args, canvasContext, user) {
   }
   
   // Find all objects to arrange
-  const objectsToArrange = args.ids.map(id => objects.find(obj => obj.id === id)).filter(Boolean);
+  const objectsToArrange = objectIds.map(id => objects.find(obj => obj.id === id)).filter(Boolean);
   console.log('🔄 Objects to arrange:', objectsToArrange);
   
   if (objectsToArrange.length === 0) {
@@ -652,11 +669,11 @@ async function executeArrangeShapes(args, canvasContext, user) {
     };
   }
   
-  if (objectsToArrange.length !== args.ids.length) {
-    console.log('❌ Only found', objectsToArrange.length, 'of', args.ids.length, 'objects');
+  if (objectsToArrange.length !== objectIds.length) {
+    console.log('❌ Only found', objectsToArrange.length, 'of', objectIds.length, 'objects');
     return {
       success: false,
-      message: `Only found ${objectsToArrange.length} of ${args.ids.length} objects`,
+      message: `Only found ${objectsToArrange.length} of ${objectIds.length} objects`,
       type: 'error'
     };
   }
@@ -784,8 +801,29 @@ async function executeArrangeShapes(args, canvasContext, user) {
  */
 function calculateLayoutPositions(objects, layout, options = {}) {
   const spacing = Math.max(0, options.spacing || 20);
-  const startX = Math.max(0, options.startX || 100);
-  const startY = Math.max(0, options.startY || 100);
+  
+  // Calculate default start position from current object positions
+  let startX, startY;
+  if (options.startX !== undefined) {
+    startX = options.startX;
+  } else if (objects.length === 1) {
+    // For single object, use its current position
+    startX = objects[0].x;
+  } else {
+    // For multiple objects, use average position
+    startX = objects.reduce((sum, obj) => sum + obj.x, 0) / objects.length;
+  }
+  
+  if (options.startY !== undefined) {
+    startY = options.startY;
+  } else if (objects.length === 1) {
+    // For single object, use its current position
+    startY = objects[0].y;
+  } else {
+    // For multiple objects, use average position
+    startY = objects.reduce((sum, obj) => sum + obj.y, 0) / objects.length;
+  }
+  
   const columns = Math.max(1, options.columns || Math.ceil(Math.sqrt(objects.length)));
   const alignment = options.alignment || 'start'; // start, center, end
   const justify = options.justify || 'start'; // start, center, end, space-between, space-around
@@ -852,42 +890,23 @@ function calculateLayoutPositions(objects, layout, options = {}) {
 function arrangeInRow(objects, spacing, startX, startY, alignment = 'start', justify = 'start') {
   if (objects.length === 0) return [];
   
-  // Calculate total width needed
-  const totalWidth = objects.reduce((sum, obj) => sum + obj.width, 0) + (objects.length - 1) * spacing;
+  // Use Euclidean distance for consistent spacing
+  const positions = calculateEuclideanPositions(objects, startX, startY, spacing, 'horizontal');
   
-  // Calculate starting X based on justification
-  let currentX = startX;
-  if (justify === 'center') {
-    currentX = startX - totalWidth / 2;
-  } else if (justify === 'end') {
-    currentX = startX - totalWidth;
-  } else if (justify === 'space-between' && objects.length > 1) {
-    // Distribute space evenly between objects
-    const availableSpace = totalWidth - objects.reduce((sum, obj) => sum + obj.width, 0);
-    spacing = availableSpace / (objects.length - 1);
-    currentX = startX;
-  } else if (justify === 'space-around' && objects.length > 1) {
-    // Distribute space around objects
-    const availableSpace = totalWidth - objects.reduce((sum, obj) => sum + obj.width, 0);
-    spacing = availableSpace / (objects.length + 1);
-    currentX = startX + spacing;
-  }
-  
-  return objects.map((obj, index) => {
-    // Calculate Y position based on alignment
-    let y = startY;
+  // Apply vertical alignment to all positions
+  return positions.map((pos, index) => {
+    const obj = objects[index];
+    let y = pos.y;
+    
     if (alignment === 'center') {
       y = startY - obj.height / 2;
     } else if (alignment === 'end') {
       y = startY - obj.height;
+    } else {
+      y = startY;
     }
     
-    const position = { x: currentX, y: y };
-    
-    // Calculate next X position
-    currentX += obj.width + spacing;
-    
-    return position;
+    return { x: pos.x, y: y };
   });
 }
 
@@ -904,42 +923,23 @@ function arrangeInRow(objects, spacing, startX, startY, alignment = 'start', jus
 function arrangeInColumn(objects, spacing, startX, startY, alignment = 'start', justify = 'start') {
   if (objects.length === 0) return [];
   
-  // Calculate total height needed
-  const totalHeight = objects.reduce((sum, obj) => sum + obj.height, 0) + (objects.length - 1) * spacing;
+  // Use Euclidean distance for consistent spacing
+  const positions = calculateEuclideanPositions(objects, startX, startY, spacing, 'vertical');
   
-  // Calculate starting Y based on justification
-  let currentY = startY;
-  if (justify === 'center') {
-    currentY = startY - totalHeight / 2;
-  } else if (justify === 'end') {
-    currentY = startY - totalHeight;
-  } else if (justify === 'space-between' && objects.length > 1) {
-    // Distribute space evenly between objects
-    const availableSpace = totalHeight - objects.reduce((sum, obj) => sum + obj.height, 0);
-    spacing = availableSpace / (objects.length - 1);
-    currentY = startY;
-  } else if (justify === 'space-around' && objects.length > 1) {
-    // Distribute space around objects
-    const availableSpace = totalHeight - objects.reduce((sum, obj) => sum + obj.height, 0);
-    spacing = availableSpace / (objects.length + 1);
-    currentY = startY + spacing;
-  }
-  
-  return objects.map((obj, index) => {
-    // Calculate X position based on alignment
-    let x = startX;
+  // Apply horizontal alignment to all positions
+  return positions.map((pos, index) => {
+    const obj = objects[index];
+    let x = pos.x;
+    
     if (alignment === 'center') {
       x = startX - obj.width / 2;
     } else if (alignment === 'end') {
       x = startX - obj.width;
+    } else {
+      x = startX;
     }
     
-    const position = { x: x, y: currentY };
-    
-    // Calculate next Y position
-    currentY += obj.height + spacing;
-    
-    return position;
+    return { x: x, y: pos.y };
   });
 }
 
@@ -998,6 +998,82 @@ function arrangeInGrid(objects, spacing, startX, startY, columns = 3, alignment 
 }
 
 /**
+ * Calculate Euclidean distance between two points
+ * @param {number} x1 - First point x
+ * @param {number} y1 - First point y
+ * @param {number} x2 - Second point x
+ * @param {number} y2 - Second point y
+ * @returns {number} - Euclidean distance
+ */
+function calculateDistance(x1, y1, x2, y2) {
+  return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+}
+
+/**
+ * Calculate positions with equal Euclidean distance spacing
+ * @param {Array} objects - Objects to distribute
+ * @param {number} startX - Starting X position
+ * @param {number} startY - Starting Y position
+ * @param {number} targetDistance - Target Euclidean distance between objects
+ * @param {string} direction - Direction vector (e.g., 'horizontal', 'vertical', 'diagonal')
+ * @returns {Array} - Array of positions
+ */
+function calculateEuclideanPositions(objects, startX, startY, targetDistance, direction = 'horizontal') {
+  if (objects.length <= 1) {
+    return objects.map(obj => ({ x: startX, y: startY }));
+  }
+  
+  const positions = [];
+  let currentX = startX;
+  let currentY = startY;
+  
+  // Calculate direction vector based on direction type
+  let deltaX = 0;
+  let deltaY = 0;
+  
+  switch (direction) {
+    case 'horizontal':
+      deltaX = 1;
+      deltaY = 0;
+      break;
+    case 'vertical':
+      deltaX = 0;
+      deltaY = 1;
+      break;
+    case 'diagonal':
+      deltaX = Math.sqrt(2) / 2;
+      deltaY = Math.sqrt(2) / 2;
+      break;
+    case 'diagonal-up':
+      deltaX = Math.sqrt(2) / 2;
+      deltaY = -Math.sqrt(2) / 2;
+      break;
+    default:
+      deltaX = 1;
+      deltaY = 0;
+  }
+  
+  // Normalize the direction vector
+  const magnitude = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+  deltaX = deltaX / magnitude;
+  deltaY = deltaY / magnitude;
+  
+  // Place first object at starting position
+  positions.push({ x: currentX, y: currentY });
+  
+  // Calculate positions for remaining objects
+  for (let i = 1; i < objects.length; i++) {
+    // Move by target distance in the specified direction
+    currentX += deltaX * targetDistance;
+    currentY += deltaY * targetDistance;
+    
+    positions.push({ x: currentX, y: currentY });
+  }
+  
+  return positions;
+}
+
+/**
  * Enhanced horizontal distribution with equal spacing
  * @param {Array} objects - Objects to distribute
  * @param {number} startX - Starting X position
@@ -1013,31 +1089,40 @@ function distributeHorizontally(objects, startX, startY, options = {}) {
   const spacing = options.spacing || 20;
   const alignment = options.alignment || 'start';
   const distributionType = options.distributionType || 'equal'; // equal, space-between, space-around
+  const useEuclideanDistance = options.useEuclideanDistance !== false; // Default to true
   
-  // Calculate total width needed
+  if (useEuclideanDistance) {
+    // Use Euclidean distance for orientation-independent spacing
+    return calculateEuclideanPositions(objects, startX, startY, spacing, 'horizontal');
+  }
+  
+  // Fallback to original linear spacing logic
   const totalObjectWidth = objects.reduce((sum, obj) => sum + obj.width, 0);
-  const totalSpacing = (objects.length - 1) * spacing;
-  const totalWidth = totalObjectWidth + totalSpacing;
+  
+  let actualSpacing = spacing;
+  let currentX = startX;
+  let totalWidth = totalObjectWidth + (objects.length - 1) * spacing;
+  
+  // Adjust spacing and positioning based on distribution type
+  if (distributionType === 'space-between') {
+    // Distribute space evenly between objects (no space at ends)
+    // Calculate the total space available for distribution
+    const availableSpace = Math.max(0, totalWidth - totalObjectWidth);
+    actualSpacing = objects.length > 1 ? availableSpace / (objects.length - 1) : 0;
+    totalWidth = totalObjectWidth + (objects.length - 1) * actualSpacing;
+  } else if (distributionType === 'space-around') {
+    // Distribute space around objects (equal space around each object)
+    const availableSpace = Math.max(0, totalWidth - totalObjectWidth);
+    actualSpacing = availableSpace / (objects.length + 1);
+    currentX = startX + actualSpacing;
+    totalWidth = totalObjectWidth + (objects.length + 1) * actualSpacing;
+  }
   
   // Calculate starting X based on alignment
-  let currentX = startX;
   if (alignment === 'center') {
     currentX = startX - totalWidth / 2;
   } else if (alignment === 'end') {
     currentX = startX - totalWidth;
-  }
-  
-  // Adjust spacing based on distribution type
-  let actualSpacing = spacing;
-  if (distributionType === 'space-between') {
-    // Distribute space evenly between objects
-    const availableSpace = totalWidth - totalObjectWidth;
-    actualSpacing = availableSpace / (objects.length - 1);
-  } else if (distributionType === 'space-around') {
-    // Distribute space around objects
-    const availableSpace = totalWidth - totalObjectWidth;
-    actualSpacing = availableSpace / (objects.length + 1);
-    currentX += actualSpacing;
   }
   
   return objects.map(obj => {
@@ -1064,31 +1149,40 @@ function distributeVertically(objects, startX, startY, options = {}) {
   const spacing = options.spacing || 20;
   const alignment = options.alignment || 'start';
   const distributionType = options.distributionType || 'equal'; // equal, space-between, space-around
+  const useEuclideanDistance = options.useEuclideanDistance !== false; // Default to true
   
-  // Calculate total height needed
+  if (useEuclideanDistance) {
+    // Use Euclidean distance for orientation-independent spacing
+    return calculateEuclideanPositions(objects, startX, startY, spacing, 'vertical');
+  }
+  
+  // Fallback to original linear spacing logic
   const totalObjectHeight = objects.reduce((sum, obj) => sum + obj.height, 0);
-  const totalSpacing = (objects.length - 1) * spacing;
-  const totalHeight = totalObjectHeight + totalSpacing;
+  
+  let actualSpacing = spacing;
+  let currentY = startY;
+  let totalHeight = totalObjectHeight + (objects.length - 1) * spacing;
+  
+  // Adjust spacing and positioning based on distribution type
+  if (distributionType === 'space-between') {
+    // Distribute space evenly between objects (no space at ends)
+    // Calculate the total space available for distribution
+    const availableSpace = Math.max(0, totalHeight - totalObjectHeight);
+    actualSpacing = objects.length > 1 ? availableSpace / (objects.length - 1) : 0;
+    totalHeight = totalObjectHeight + (objects.length - 1) * actualSpacing;
+  } else if (distributionType === 'space-around') {
+    // Distribute space around objects (equal space around each object)
+    const availableSpace = Math.max(0, totalHeight - totalObjectHeight);
+    actualSpacing = availableSpace / (objects.length + 1);
+    currentY = startY + actualSpacing;
+    totalHeight = totalObjectHeight + (objects.length + 1) * actualSpacing;
+  }
   
   // Calculate starting Y based on alignment
-  let currentY = startY;
   if (alignment === 'center') {
     currentY = startY - totalHeight / 2;
   } else if (alignment === 'end') {
     currentY = startY - totalHeight;
-  }
-  
-  // Adjust spacing based on distribution type
-  let actualSpacing = spacing;
-  if (distributionType === 'space-between') {
-    // Distribute space evenly between objects
-    const availableSpace = totalHeight - totalObjectHeight;
-    actualSpacing = availableSpace / (objects.length - 1);
-  } else if (distributionType === 'space-around') {
-    // Distribute space around objects
-    const availableSpace = totalHeight - totalObjectHeight;
-    actualSpacing = availableSpace / (objects.length + 1);
-    currentY += actualSpacing;
   }
   
   return objects.map(obj => {
@@ -2472,10 +2566,6 @@ export function validateFunctionCall(functionCall) {
   return { valid: true };
 }
 
-export default {
-  executeCommand,
-  executeCommands,
-  findObjectsByDescription,
-  getSelectedObjectsForAI,
-  validateFunctionCall
+export {
+  calculateLayoutPositions
 };

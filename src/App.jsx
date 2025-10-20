@@ -23,7 +23,7 @@ import AIAgentPanel from './components/AI/AIAgentPanel'
 import CommandOutlinePreview from './components/AI/CommandOutlinePreview'
 import TaskBreakdown from './components/AI/TaskBreakdown'
 import { processCommand, testConnection, getLangSmithStatus } from './services/aiAgent'
-import { executeCommand, executeCommands } from './services/commandExecutor'
+import { executeCommand, executeCommands, calculateLayoutPositions } from './services/commandExecutor'
 import { analyzeTaskBreakdown, analyzeMultipleTasks } from './services/taskAnalyzer'
 
 // Main App content (shown when authenticated)
@@ -318,23 +318,30 @@ function MainApp() {
           break;
         
         case 'arrange_shapes':
-          // For arrange commands, show the new positions with dashed borders
+          // For arrange commands, calculate and show the new positions with dashed borders
           const arrangeObjects = canvasState.objects.filter(obj => args.ids.includes(obj.id));
-          // This is more complex - we'd need to calculate new positions
-          // For now, just mark them as being arranged
-          arrangeObjects.forEach(obj => {
-            previewObjects.push({
-              ...obj,
-              id: 'preview-arrange-' + obj.id,
-              stroke: '#9b59b6',
-              strokeWidth: 2,
-              dash: [5, 5],
-              opacity: 0.8,
-              isPreview: true,
-              previewType: 'arrange',
-              originalId: obj.id
+          
+          if (arrangeObjects.length > 0) {
+            // Calculate new positions using the same logic as the actual execution
+            const newPositions = calculateLayoutPositions(arrangeObjects, args.layout, args.options || {});
+            
+            arrangeObjects.forEach((obj, index) => {
+              const newPos = newPositions[index];
+              previewObjects.push({
+                ...obj,
+                id: 'preview-arrange-' + obj.id,
+                x: newPos.x,
+                y: newPos.y,
+                stroke: '#9b59b6',
+                strokeWidth: 2,
+                dash: [5, 5],
+                opacity: 0.8,
+                isPreview: true,
+                previewType: 'arrange',
+                originalId: obj.id
+              });
             });
-          });
+          }
           break;
         
         default:
